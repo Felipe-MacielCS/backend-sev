@@ -1,11 +1,11 @@
 [Unit]
-Description=NodeJS Exercise Tracker
+Description=NodeJS Workers Scheduling
 After=network.target
  
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/ubuntu/nodeapps/2025/project3/t7
+WorkingDirectory=/home/ubuntu/nodeapps/2026/t7
 ExecStart=npm run start
 Restart=on-failure
  
