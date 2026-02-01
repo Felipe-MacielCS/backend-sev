@@ -1,0 +1,65 @@
+name: AWS DEPLOY TO STAGING
+# turn off deploy to AWS
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - dev
+
+jobs:
+  aws-deploy:
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: ${{ secrets.AWS_DB_HOST }}
+      DB_PW: ${{ secrets.AWS_DB_PW}}
+      DB_USER: ${{ secrets.AWS_DB_USER }}
+      DB_NAME: ${{ secrets.AWS_DB_NAME }}
+      CLIENT_ID: ${{secrets.CLIENT_ID}}
+      CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
+      PORT: ${{secrets.PORT}}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: dev
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm install
+
+      - run: |
+          touch .env
+          echo DB_HOST = "$DB_HOST" >> .env
+          echo DB_PW = "$DB_PW" >> .env
+          echo DB_USER = "$DB_USER" >> .env
+          echo DB_NAME = "$DB_NAME" >> .env
+          echo CLIENT_ID = "$CLIENT_ID" >> .env
+          echo CLIENT_SECRET = "$CLIENT_SECRET" >> .env
+          echo PORT = "$PORT" >> .env
+
+      - run: npm run bundle
+
+      - name: Deploy to Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: "-rltgoDzvO --delete"
+          SOURCE: "deploy/"
+          REMOTE_HOST: "project3.eaglesoftwareteam.com"
+          REMOTE_USER: ubuntu
+          TARGET: "nodeapps/2025/project3/t7"
+      - name: Execute SSH commmands on remote server
+        uses: JimCronqvist/action-ssh@master
+        env:
+          NAME: "Root"
+        with:
+          hosts: "ubuntu@project3.eaglesoftwareteam.com"
+          privateKey: ${{ secrets.SERVER_SSH_KEY }}
+          debug: false
+          command: |
+            cd nodeapps/2025/project3/t7
+            npm install
+            sudo systemctl stop tracker-t7-backend
+            sudo cp tracker-t7-backend.service /lib/systemd/system/tracker-t7-backend.service
+            sudo systemctl daemon-reload
+            sudo systemctl start tracker-t7-backend
