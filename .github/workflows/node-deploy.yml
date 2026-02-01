@@ -47,19 +47,19 @@ jobs:
           SOURCE: "deploy/"
           REMOTE_HOST: "project3.eaglesoftwareteam.com"
           REMOTE_USER: ubuntu
-          TARGET: "nodeapps/2025/project3/t7"
+          TARGET: "nodeapps/2026/t7"
       - name: Execute SSH commmands on remote server
         uses: JimCronqvist/action-ssh@master
         env:
           NAME: "Root"
         with:
-          hosts: "ubuntu@project3.eaglesoftwareteam.com"
+          hosts: "ubuntu@project1.eaglesoftwareteam.com"
           privateKey: ${{ secrets.SERVER_SSH_KEY }}
           debug: false
           command: |
-            cd nodeapps/2025/project3/t7
+            cd nodeapps/2026/t7
             npm install
-            sudo systemctl stop tracker-t7-backend
-            sudo cp tracker-t7-backend.service /lib/systemd/system/tracker-t7-backend.service
+            sudo systemctl stop workerscheduling-t7-backend
+            sudo cp workerscheduling-t7-backend.service /lib/systemd/system/workerscheduling-t7-backend.service
             sudo systemctl daemon-reload
-            sudo systemctl start tracker-t7-backend
+            sudo systemctl start workerscheduling-t7-backend
