@@ -47,7 +47,7 @@ jobs:
           SOURCE: "deploy/"
           REMOTE_HOST: "project3.eaglesoftwareteam.com"
           REMOTE_USER: ubuntu
-          TARGET: "nodeapps/2026/t7"
+          TARGET: "nodeapps/sev2026/t7"
       - name: Execute SSH commmands on remote server
         uses: JimCronqvist/action-ssh@master
         env:
