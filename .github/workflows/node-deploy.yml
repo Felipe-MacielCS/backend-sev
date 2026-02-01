@@ -57,7 +57,7 @@ jobs:
           privateKey: ${{ secrets.SERVER_SSH_KEY }}
           debug: false
           command: |
-            cd nodeapps/2026/t7
+            cd nodeapps/sev2026/t7
             npm install
             sudo systemctl stop workerscheduling-t7-backend
             sudo cp workerscheduling-t7-backend.service /lib/systemd/system/workerscheduling-t7-backend.service
