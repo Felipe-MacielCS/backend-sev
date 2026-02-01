@@ -1,0 +1,21 @@
+{
+  "name": "backend-sev",
+  "version": "1.0.0",
+  "description": "This application allows users to create and maintain a list of tutorials that can have multiple lessons within. Please visit https://github.com/OC-ComputerScience/tutorial-frontend-vue2 for the Vue 2 frontend repository or https://github.com/OC-ComputerScience/tutorial-frontend-vue3 for the Vue 3 frontend repository.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Felipe-MacielCS/backend-sev.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Felipe-MacielCS/backend-sev/issues"
+  },
+  "homepage": "https://github.com/Felipe-MacielCS/backend-sev#readme"
+}
