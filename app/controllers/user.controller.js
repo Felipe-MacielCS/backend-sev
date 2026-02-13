@@ -1,19 +1,22 @@
 import db from "../models/index.js";
 const User = db.user;
-const Op = db.Sequelize.Op;
-const exportsObj = {};
 
-// Create and Save a new User
-exportsObj.create = (req, res) => {
-  if (!req.body.name || !req.body.email) {
-    res.status(400).send({ message: "Name and email are required!" });
+const exports = {};
+
+// Create a new user
+exports.create = (req, res) => {
+  const { name, email, phone, status } = req.body;
+
+  if (!name || !email) {
+    res.status(400).send({ message: "name and email are required." });
     return;
   }
 
   const user = {
-    name: req.body.name,
-    email: req.body.email,
-    isAdmin: req.body.isAdmin || false,
+    name,
+    email,
+    phone: phone ?? null,
+    status: status ?? "active",
   };
 
   User.create(user)
@@ -25,12 +28,15 @@ exportsObj.create = (req, res) => {
     );
 };
 
-// Retrieve all users
-exportsObj.findAll = (req, res) => {
-  const name = req.query.name;
-  const condition = name ? { name: { [Op.like]: `%${name}%` } } : null;
+// Get all users (optionally filter by status or email)
+exports.findAll = (req, res) => {
+  const { status, email } = req.query;
 
-  User.findAll({ where: condition })
+  const where = {};
+  if (status) where.status = status;
+  if (email) where.email = email;
+
+  User.findAll({ where })
     .then((data) => res.send(data))
     .catch((err) =>
       res.status(500).send({
@@ -39,83 +45,66 @@ exportsObj.findAll = (req, res) => {
     );
 };
 
-// Find a single User by ID
-exportsObj.findOne = (req, res) => {
+// Get one user by primary key
+exports.findOne = (req, res) => {
   const id = req.params.id;
 
   User.findByPk(id)
     .then((data) => {
       if (data) res.send(data);
-      else res.status(404).send({ message: `Cannot find User with id=${id}.` });
+      else res.status(404).send({ message: `Cannot find User with ID=${id}.` });
     })
     .catch((err) =>
-      res.status(500).send({ message: "Error retrieving User with id=" + id })
+      res.status(500).send({
+        message: "Error retrieving User with ID=" + id,
+      })
     );
 };
 
-// Find a single User by email
-exportsObj.findByEmail = (req, res) => {
-  const email = req.params.email;
-
-  User.findOne({ where: { email } })
-    .then((data) => {
-      if (data) res.send(data);
-      else res.send({ email: "not found" });
-    })
-    .catch((err) =>
-      res
-        .status(500)
-        .send({ message: "Error retrieving User with email=" + email })
-    );
-};
-
-// Update a User by ID
-exportsObj.update = (req, res) => {
+// Update a user by primary key
+exports.update = (req, res) => {
   const id = req.params.id;
+  if (!req.body || Object.keys(req.body).length === 0) {
+    res.status(400).send({ message: "Request body cannot be empty." });
+    return;
+  }
 
-  User.update(req.body, { where: { userID: id } })
+  User.update(req.body, { where: { ID: id } })
     .then((num) => {
-      if (num == 1) res.send({ message: "User was updated successfully." });
-      else
+      const affected = Array.isArray(num) ? num[0] : num;
+
+      if (affected === 1) res.send({ message: "User updated successfully." });
+      else {
         res.send({
-          message: `Cannot update User with id=${id}. Maybe not found or req.body is empty!`,
+          message: `Cannot update User with ID=${id}. Maybe it was not found or nothing changed.`,
         });
+      }
     })
     .catch((err) =>
-      res.status(500).send({ message: "Error updating User with id=" + id })
+      res.status(500).send({
+        message: "Error updating User with ID=" + id,
+      })
     );
 };
 
-// Delete a User
-exportsObj.delete = (req, res) => {
+// Delete a user by primary key
+exports.delete = (req, res) => {
   const id = req.params.id;
 
-  User.destroy({ where: { userID: id } })
+  User.destroy({ where: { ID: id } })
     .then((num) => {
-      if (num == 1) res.send({ message: "User was deleted successfully!" });
-      else
+      if (num === 1) res.send({ message: "User deleted successfully!" });
+      else {
         res.send({
-          message: `Cannot delete User with id=${id}. Maybe not found!`,
+          message: `Cannot delete User with ID=${id}. Maybe it was not found!`,
         });
+      }
     })
     .catch((err) =>
-      res.status(500).send({ message: "Could not delete User with id=" + id })
+      res.status(500).send({
+        message: "Could not delete User with ID=" + id,
+      })
     );
 };
 
-// Promote or demote user to admin
-exportsObj.setAdmin = (req, res) => {
-  const id = req.params.id;
-  const { isAdmin } = req.body;
-
-  User.update({ isAdmin }, { where: { userID: id } })
-    .then((num) => {
-      if (num == 1) res.send({ message: "Admin status updated successfully." });
-      else res.send({ message: `Cannot update admin status for id=${id}.` });
-    })
-    .catch((err) =>
-      res.status(500).send({ message: "Error updating admin status." })
-    );
-};
-
-export default exportsObj;
+export default exports;

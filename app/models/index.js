@@ -19,6 +19,8 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.user = User;
+
+// previous project
 db.session = Session;
 db.athlete = Athlete;
 db.coach = Coach;

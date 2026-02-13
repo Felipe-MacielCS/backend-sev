@@ -4,6 +4,8 @@ const router = Router();
 
 import AuthRoutes from "./auth.routes.js";
 import UserRoutes from "./user.routes.js";
+
+// previous project
 import AthleteRoutes from "./athlete.routes.js";
 import Coach from "./coach.routes.js";
 import Goal from "./goal.routes.js";
@@ -14,8 +16,10 @@ import ResultRoutes from "./result.routes.js";
 import PlanAssignmentRoutes from "./planassignment.routes.js";
 import CoachAthleteRoutes from "./coachathletes.routes.js";
 
-router.use("/", AuthRoutes);
 router.use("/users", UserRoutes);
+router.use("/", AuthRoutes);
+
+// previous project
 router.use("/athletes", AthleteRoutes);
 router.use("/coaches", Coach);
 router.use("/goals", Goal);
