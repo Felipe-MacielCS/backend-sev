@@ -13,7 +13,7 @@ const UserShift = sequelize.define(
     status: {
       type: DataTypes.STRING(40),
       allowNull: false,
-      defaultValue: "assigned", // common: assigned, completed, swapped, canceled
+      defaultValue: "assigned",
     },
 
     shiftID: {

@@ -5,6 +5,7 @@ const router = Router();
 import AuthRoutes from "./auth.routes.js";
 import UserRoutes from "./user.routes.js";
 import UserShiftRoutes from "./usershift.routes.js";
+import ShiftRoutes from "./shift.routes.js";
 
 // previous project
 import AthleteRoutes from "./athlete.routes.js";
@@ -20,6 +21,7 @@ import CoachAthleteRoutes from "./coachathletes.routes.js";
 router.use("/users", UserRoutes);
 router.use("/", AuthRoutes);
 router.use("/usershifts", UserShiftRoutes);
+router.use("/shifts", ShiftRoutes)
 
 // previous project
 router.use("/athletes", AthleteRoutes);

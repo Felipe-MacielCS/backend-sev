@@ -4,6 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 
 import User from "./user.model.js";
 import UserShift from "./usershift.model.js";
+import Shift from "./shift.model.js";
 
 // previous project
 import Athlete from "./athlete.model.js";
@@ -23,6 +24,7 @@ db.sequelize = sequelize;
 
 db.user = User;
 db.usershift = UserShift;
+db.shift = Shift; 
 
 // previous project
 db.session = Session;
@@ -35,6 +37,20 @@ db.exercisepool = ExercisePool;
 db.result = Result;
 db.planassignment = PlanAssignment;
 db.coachathlete = CoachAthlete;
+
+db.user.belongsToMany(db.shift, {
+  through: db.usershift,
+  foreignKey: "userID",
+  otherKey: "shiftID",
+  onDelete: "CASCADE",
+});
+
+db.shift.belongsToMany(db.user, {
+  through: db.usershift,
+  foreignKey: "shiftID",
+  otherKey: "userID",
+  onDelete: "CASCADE",
+});
 
 // User to Athlete
 db.user.hasMany(db.athlete, { foreignKey: "userID", onDelete: "CASCADE" });
