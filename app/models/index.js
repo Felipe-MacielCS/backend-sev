@@ -3,6 +3,9 @@ import { Sequelize, DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
 import User from "./user.model.js";
+import UserShift from "./usershift.model.js";
+
+// previous project
 import Athlete from "./athlete.model.js";
 import Session from "./session.model.js";
 import Coach from "./coach.model.js";
@@ -19,6 +22,7 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.user = User;
+db.usershift = UserShift;
 
 // previous project
 db.session = Session;
