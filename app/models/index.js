@@ -54,6 +54,9 @@ db.result.belongsTo(db.goal, { foreignKey: "goalID" });
 db.coach.hasMany(db.exerciseplan, { foreignKey: "coachID", onDelete: "CASCADE" });
 db.exerciseplan.belongsTo(db.coach, { foreignKey: "coachID" });
 
+db.department.hasMany(db.schedule, { foreignKey: "departmentID" });
+db.schedule.belongsTo(db.department, { foreignKey: "departmentID" });
+
 // Exercise to ExercisePlan using exercisePool
 db.exercise.belongsToMany(db.exerciseplan, {
   through: db.exercisepool,
