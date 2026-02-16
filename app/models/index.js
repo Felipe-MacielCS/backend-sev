@@ -5,6 +5,7 @@ import sequelize from "../config/sequelizeInstance.js";
 import User from "./user.model.js";
 import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
+import UserShiftTaskList from "./usershifttasklist.model.js"
 
 // previous project
 import Athlete from "./athlete.model.js";
@@ -24,7 +25,8 @@ db.sequelize = sequelize;
 
 db.user = User;
 db.usershift = UserShift;
-db.shift = Shift; 
+db.shift = Shift;
+db.usershifttasklist = UserShiftTaskList; 
 
 // previous project
 db.session = Session;
