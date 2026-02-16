@@ -5,7 +5,8 @@ import sequelize from "../config/sequelizeInstance.js";
 import User from "./user.model.js";
 import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
-import UserShiftTaskList from "./usershifttasklist.model.js"
+import UserShiftTaskList from "./usershifttasklist.model.js";
+import TaskList from "./tasklist.model.js";
 
 // previous project
 import Athlete from "./athlete.model.js";
@@ -27,6 +28,7 @@ db.user = User;
 db.usershift = UserShift;
 db.shift = Shift;
 db.usershifttasklist = UserShiftTaskList; 
+db.tasklist = TaskList;
 
 // previous project
 db.session = Session;
@@ -40,6 +42,7 @@ db.result = Result;
 db.planassignment = PlanAssignment;
 db.coachathlete = CoachAthlete;
 
+// user to usershift
 db.user.belongsToMany(db.shift, {
   through: db.usershift,
   foreignKey: "userID",
@@ -53,6 +56,22 @@ db.shift.belongsToMany(db.user, {
   otherKey: "userID",
   onDelete: "CASCADE",
 });
+
+// usershift to tasklist
+db.usershift.belongsToMany(db.tasklist, {
+  through: db.usershifttasklist,
+  foreignKey: "user_shiftID",
+  otherKey: "task_listID",
+  as: "taskLists",
+});
+
+db.tasklist.belongsToMany(db.usershift, {
+  through: db.usershifttasklist,
+  foreignKey: "task_listID",
+  otherKey: "user_shiftID",
+  as: "userShifts",
+});
+
 
 // User to Athlete
 db.user.hasMany(db.athlete, { foreignKey: "userID", onDelete: "CASCADE" });
