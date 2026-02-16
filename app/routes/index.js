@@ -13,6 +13,8 @@ import ExercisePool from "./exercisepool.routes.js";
 import ResultRoutes from "./result.routes.js";
 import PlanAssignmentRoutes from "./planassignment.routes.js";
 import CoachAthleteRoutes from "./coachathletes.routes.js";
+import ClockInOutRoutes from "./clockinout.routes.js";
+
 
 router.use("/", AuthRoutes);
 router.use("/users", UserRoutes);
@@ -25,5 +27,6 @@ router.use("/exercisepools", ExercisePool);
 router.use("/results", ResultRoutes);
 router.use("/planassignments", PlanAssignmentRoutes);
 router.use("/coachathletes", CoachAthleteRoutes);
+router.use("/clockinout", ClockInOutRoutes);
 
 export default router;
