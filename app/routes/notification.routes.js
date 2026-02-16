@@ -17,3 +17,4 @@ router.get("/:id", [authenticate], notifications.findOne);
 router.delete("/user-notifications/:id", [authenticate], userNotifications.delete);
 
 export default router;
+
