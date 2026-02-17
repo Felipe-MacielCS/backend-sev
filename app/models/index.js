@@ -97,6 +97,12 @@ db.result.belongsTo(db.goal, { foreignKey: "goalID" });
 db.coach.hasMany(db.exerciseplan, { foreignKey: "coachID", onDelete: "CASCADE" });
 db.exerciseplan.belongsTo(db.coach, { foreignKey: "coachID" });
 
+db.notification.hasMany(db.usernotification, { foreignKey: "notificationID" });
+db.usernotification.belongsTo(db.notification, { foreignKey: "notificationID" });
+
+db.user.hasMany(db.usernotification, { foreignKey: "userID" });
+db.usernotification.belongsTo(db.user, { foreignKey: "userID" });
+
 db.department.hasMany(db.schedule, { foreignKey: "departmentID" });
 db.schedule.belongsTo(db.department, { foreignKey: "departmentID" });
 
