@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
-const User = sequelize.define(
-  "user",
+const TaskList = sequelize.define(
+  "taskList",
   {
     ID: {
       type: DataTypes.INTEGER,
@@ -18,31 +18,20 @@ const User = sequelize.define(
       },
     },
 
-    phone: {
-      type: DataTypes.STRING(30),
+    description: {
+      type: DataTypes.STRING(500),
       allowNull: true,
     },
 
-    email: {
-      type: DataTypes.STRING(255),
+    departmentID: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: { msg: "email must be a valid email address" },
-        notEmpty: { msg: "email cannot be empty" },
-      },
-    },
-
-    status: {
-      type: DataTypes.STRING(40),
-      allowNull: false,
-      defaultValue: "active",
     },
   },
   {
-    tableName: "users",
+    tableName: "task_lists",
     timestamps: true,
   }
 );
 
-export default User;
+export default TaskList;
