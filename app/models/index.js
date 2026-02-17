@@ -7,18 +7,10 @@ import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
 import UserShiftTaskList from "./usershifttasklist.model.js";
 import TaskList from "./tasklist.model.js";
-
-// previous project
-import Athlete from "./athlete.model.js";
-import Session from "./session.model.js";
-import Coach from "./coach.model.js";
-import Goal from "./goal.model.js";
-import Exercise from "./exercise.model.js";
-import ExercisePlan from "./exerciseplan.model.js";
-import ExercisePool from "./exercisepool.model.js";
-import Result from "./result.model.js";
-import PlanAssignment from "./planassignment.model.js";
-import CoachAthlete from "./coachathlete.model.js";
+import DepartmentUser from "./departmentusers.model.js";
+import Department from "./department.model.js";
+import UserPosition from "./userposition.model.js";
+import Position from "./position.model.js";
 
 const db = {};
 db.Sequelize = Sequelize;
@@ -29,18 +21,33 @@ db.usershift = UserShift;
 db.shift = Shift;
 db.usershifttasklist = UserShiftTaskList; 
 db.tasklist = TaskList;
+db.departmentuser = DepartmentUser;
+db.department = Department;
+db.userposition = UserPosition;
+db.position = Position;
 
-// previous project
-db.session = Session;
-db.athlete = Athlete;
-db.coach = Coach;
-db.goal = Goal;
-db.exercise = Exercise;
-db.exerciseplan = ExercisePlan;
-db.exercisepool = ExercisePool;
-db.result = Result;
-db.planassignment = PlanAssignment;
-db.coachathlete = CoachAthlete;
+// Department to position
+db.department.hasMany(db.position, { foreignKey: "departmentID", onDelete: "CASCADE"});
+db.position.belongsTo(db.department, {foreignKey: "departmentID"});
+
+// Department to tasklist
+db.department.hasMany(db.tasklist, { foreignKey: "departmentID", onDelete: "CASCADE"});
+db.tasklist.belongsTo(db.department, {foreignKey: "departmentID"});
+
+// user to position
+db.user.belongsToMany(db.position, {
+  through: db.userposition,
+  foreignKey: "userID",
+  otherKey: "positionID",
+  onDelete: "CASCADE",
+});
+
+db.position.belongsToMany(db.user, {
+  through: db.userposition,
+  foreignKey: "positionID",
+  otherKey: "userID",
+  onDelete: "CASCADE",
+});
 
 // user to usershift
 db.user.belongsToMany(db.shift, {
@@ -62,84 +69,29 @@ db.usershift.belongsToMany(db.tasklist, {
   through: db.usershifttasklist,
   foreignKey: "user_shiftID",
   otherKey: "task_listID",
-  as: "taskLists",
+  onDelete: "CASCADE",
 });
 
 db.tasklist.belongsToMany(db.usershift, {
   through: db.usershifttasklist,
   foreignKey: "task_listID",
   otherKey: "user_shiftID",
-  as: "userShifts",
-});
-
-
-// User to Athlete
-db.user.hasMany(db.athlete, { foreignKey: "userID", onDelete: "CASCADE" });
-db.athlete.belongsTo(db.user, { foreignKey: "userID" });
-
-// User to Coach
-db.user.hasOne(db.coach, { foreignKey: "userID", onDelete: "CASCADE" });
-db.coach.belongsTo(db.user, { foreignKey: "userID" });
-
-// Athlete to Goal
-db.athlete.hasMany(db.goal, { foreignKey: "athleteID", onDelete: "RESTRICT" });
-db.goal.belongsTo(db.athlete, { foreignKey: "athleteID" });
-
-// Exercise to Goal
-db.exercise.hasMany(db.goal, { foreignKey: "exerciseID", onDelete: "RESTRICT" });
-db.goal.belongsTo(db.exercise, { foreignKey: "exerciseID" });
-
-// Goal to Result
-db.goal.hasMany(db.result, { foreignKey: "goalID", onDelete: "CASCADE" });
-db.result.belongsTo(db.goal, { foreignKey: "goalID" });
-
-// Coach to ExercisePlan
-db.coach.hasMany(db.exerciseplan, { foreignKey: "coachID", onDelete: "CASCADE" });
-db.exerciseplan.belongsTo(db.coach, { foreignKey: "coachID" });
-
-// Exercise to ExercisePlan using exercisePool
-db.exercise.belongsToMany(db.exerciseplan, {
-  through: db.exercisepool,
-  foreignKey: "exerciseID",
-  otherKey: "planID",
   onDelete: "CASCADE",
 });
 
-db.exerciseplan.belongsToMany(db.exercise, {
-  through: db.exercisepool,
-  foreignKey: "planID",
-  otherKey: "exerciseID",
+// User to department
+db.user.belongsToMany(db.department, {
+  through: db.departmentuser,
+  foreignKey: "userID",
+  otherKey: "departmentID",
   onDelete: "CASCADE",
 });
 
-// Athlete to ExercisePlan using PlanAssignment
-Athlete.belongsToMany(ExercisePlan, {
-  through: PlanAssignment,
-  foreignKey: "athleteID",
-  otherKey: "planID",
-  as: "plans",
-});
-
-ExercisePlan.belongsToMany(Athlete, {
-  through: PlanAssignment,
-  foreignKey: "planID",
-  otherKey: "athleteID",
-  as: "athletes",
-});
-
-// Coach to Athlete using CoachAthlete
-db.coach.belongsToMany(db.athlete, {
-  through: db.coachathlete,
-  foreignKey: "coachID",
-  otherKey: "athleteID",
-  as: "athletes",
-});
-
-db.athlete.belongsToMany(db.coach, {
-  through: db.coachathlete,
-  foreignKey: "athleteID",
-  otherKey: "coachID",
-  as: "coaches",
+db.department.belongsToMany(db.user, {
+  through: db.departmentuser,
+  foreignKey: "departmentID",
+  otherKey: "userID",
+  onDelete: "CASCADE",
 });
 
 export default db;
