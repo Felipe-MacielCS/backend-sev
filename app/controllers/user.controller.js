@@ -3,9 +3,9 @@ const User = db.user;
 
 const exports = {};
 
-// Create a new user
+// Create a new user with a specific role
 exports.create = (req, res) => {
-  const { name, email, phone, status } = req.body;
+  const { name, email, phone, status, role } = req.body;
 
   if (!name || !email) {
     res.status(400).send({ message: "name and email are required." });
@@ -17,6 +17,7 @@ exports.create = (req, res) => {
     email,
     phone: phone ?? null,
     status: status ?? "active",
+    role: role ?? "Worker", // Support for the new consolidated role attribute
   };
 
   User.create(user)
@@ -28,13 +29,14 @@ exports.create = (req, res) => {
     );
 };
 
-// Get all users (optionally filter by status or email)
+// Get all users (optionally filter by status, email, or role)
 exports.findAll = (req, res) => {
-  const { status, email } = req.query;
+  const { status, email, role } = req.query;
 
   const where = {};
   if (status) where.status = status;
   if (email) where.email = email;
+  if (role) where.role = role;
 
   User.findAll({ where })
     .then((data) => res.send(data))
@@ -45,64 +47,66 @@ exports.findAll = (req, res) => {
     );
 };
 
-// Get one user by primary key
+// Get one user by userID
 exports.findOne = (req, res) => {
-  const id = req.params.id;
+  const userID = req.params.id;
 
-  User.findByPk(id)
+  User.findByPk(userID)
     .then((data) => {
       if (data) res.send(data);
-      else res.status(404).send({ message: `Cannot find User with ID=${id}.` });
+      else res.status(404).send({ message: `Cannot find User with userID=${userID}.` });
     })
     .catch((err) =>
       res.status(500).send({
-        message: "Error retrieving User with ID=" + id,
+        message: "Error retrieving User with userID=" + userID,
       })
     );
 };
 
-// Update a user by primary key
+// Update a user by userID
 exports.update = (req, res) => {
-  const id = req.params.id;
+  const userID = req.params.id;
+  
   if (!req.body || Object.keys(req.body).length === 0) {
     res.status(400).send({ message: "Request body cannot be empty." });
     return;
   }
 
-  User.update(req.body, { where: { ID: id } })
+  // Use userID in the where clause to match standardized model PK
+  User.update(req.body, { where: { userID: userID } })
     .then((num) => {
       const affected = Array.isArray(num) ? num[0] : num;
 
       if (affected === 1) res.send({ message: "User updated successfully." });
       else {
         res.send({
-          message: `Cannot update User with ID=${id}. Maybe it was not found or nothing changed.`,
+          message: `Cannot update User with userID=${userID}. Maybe it was not found or nothing changed.`,
         });
       }
     })
     .catch((err) =>
       res.status(500).send({
-        message: "Error updating User with ID=" + id,
+        message: "Error updating User with userID=" + userID,
       })
     );
 };
 
-// Delete a user by primary key
+// Delete a user by userID
 exports.delete = (req, res) => {
-  const id = req.params.id;
+  const userID = req.params.id;
 
-  User.destroy({ where: { ID: id } })
+  User.destroy({ where: { userID: userID } })
     .then((num) => {
       if (num === 1) res.send({ message: "User deleted successfully!" });
       else {
         res.send({
-          message: `Cannot delete User with ID=${id}. Maybe it was not found!`,
+          message: `Cannot delete User with userID=${userID}. Maybe it was not found!`,
         });
       }
     })
     .catch((err) =>
       res.status(500).send({
-        message: "Could not delete User with ID=" + id,
+        message: "Could not delete User with userID=" + userID,
       })
     );
 };

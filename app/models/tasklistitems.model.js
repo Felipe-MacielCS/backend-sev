@@ -4,7 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 const TaskListItem = sequelize.define(
   "tasklistitem",
   {
-    taskListItemID: {
+    ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,

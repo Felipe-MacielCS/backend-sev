@@ -4,7 +4,7 @@ import cors from "cors";
 
 import db  from "./app/models/index.js";
 
-db.sequelize.sync();
+db.sequelize.sync({force: true});
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
   
 
-app.use("/tracker-t7", routes); 
+app.use("/workerscheduling-t7", routes); 
 
 const PORT = process.env.PORT || 3100;
 if (process.env.NODE_ENV !== "test") {

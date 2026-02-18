@@ -4,7 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 const SwapShiftRequest = sequelize.define(
   "swapShiftRequest",
   {
-    swapShiftRequestID: {
+    ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
