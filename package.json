@@ -1,13 +1,22 @@
 {
   "name": "backend-sev",
   "version": "1.0.0",
-  "description": "This application allows users to create and maintain a list of tutorials that can have multiple lessons within. Please visit https://github.com/OC-ComputerScience/tutorial-frontend-vue2 for the Vue 2 frontend repository or https://github.com/OC-ComputerScience/tutorial-frontend-vue3 for the Vue 3 frontend repository.",
+  "description": "Worker Scheduling System Backend",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
+    "dev": "nodemon server.js",
     "bundle": "mkdir deploy && cp -r app server.js package.json package-lock.json workerscheduling-t7-backend.service .env deploy"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^9.10.0",
+    "mysql2": "^3.9.7",
+    "sequelize": "^6.37.3"
   },
   "repository": {
     "type": "git",
