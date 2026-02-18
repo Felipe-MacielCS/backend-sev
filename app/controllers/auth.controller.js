@@ -1,11 +1,8 @@
-// app/controllers/auth.controller.js
 import db from "../models/index.js";
 import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
 
 const User = db.user;
-const Athlete = db.athlete;
-const Coach = db.coach;            
 const Session = db.session;
 const google_id = process.env.CLIENT_ID;
 
@@ -14,13 +11,6 @@ const exportsObj = {};
 exportsObj.login = async (req, res) => {
   try {
     const googleToken = req.body.credential;
-
-    const isAthlete = req.body.isAthlete || false;
-    const isCoach = req.body.isCoach || false; 
-    const sport = req.body.sport || null;
-    const age = req.body.age || null;
-    const weight = req.body.weight || null;
-    const height = req.body.height || null;
 
     const client = new OAuth2Client(google_id);
     const ticket = await client.verifyIdToken({
@@ -32,56 +22,30 @@ exportsObj.login = async (req, res) => {
     const email = googleUser.email;
     const name = `${googleUser.given_name} ${googleUser.family_name}`;
 
+    // Search for existing user by email
     let user = await User.findOne({ where: { email } });
 
     if (!user) {
-
+      // Create new user with the default 'Worker' role
       user = await User.create({
         name,
         email,
-        isAdmin: false,
+        role: "Worker", // Consolidating Athlete/Coach into a single role attribute
+        status: "active",
       });
-      console.log("New user created:", user.dataValues);
-
-      if (isAthlete) {
-        const athlete = await Athlete.create({
-          userID: user.userID,
-          sport,
-          age,
-          weight,
-          height,
-        });
-        console.log(" Athlete profile created:", athlete.dataValues);
-      } else if (isCoach) {
-        const coach = await Coach.create({
-          userID: user.userID,
-        });
-        console.log(" Coach profile created:", coach.dataValues);
-      }
+      console.log("New user created with default Worker role:", user.dataValues);
     } else {
-
+      // Update name if changed on Google side
       user.name = name; 
       await user.save();
-      console.log(" Existing user updated:", user.dataValues);
-
-
-      if (isCoach) {
-        const existingCoach = await Coach.findOne({
-          where: { userID: user.userID },
-        });
-        if (!existingCoach) {
-          const coach = await Coach.create({ userID: user.userID });
-          console.log(" Coach profile created for existing user:", coach.dataValues);
-        }
-      }
-
-
+      console.log("Existing user logged in:", user.dataValues);
     }
 
+    // Standardize session management: Clean up old sessions and create a new token
     await Session.destroy({ where: { email } });
 
     const token = crypto.randomBytes(64).toString("hex");
-    const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000); 
+    const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24-hour expiration
 
     const session = await Session.create({
       email,
@@ -89,13 +53,14 @@ exportsObj.login = async (req, res) => {
       expirationDate,
     });
 
-    console.log(" New session created:", session.dataValues);
+    console.log("New session created for:", email);
 
+    // Return the user data and the new role attribute to the frontend
     res.send({
-      userID: user.userID,
+      userID: user.ID, 
       email: user.email,
       name: user.name,
-      isAdmin: user.isAdmin,
+      role: user.role,    // The frontend now uses this to determine permissions
       token: session.token,
     });
   } catch (err) {
@@ -104,20 +69,19 @@ exportsObj.login = async (req, res) => {
   }
 };
 
-// ---------------------- AUTHORIZE ----------------------
+// Authorize endpoint (Placeholder for custom logic)
 exportsObj.authorize = async (req, res) => {
   try {
-    console.log(" Authorize endpoint hit for user:", req.params.id);
     res.send({
-      message: "Authorize endpoint active (placeholder).",
+      message: "Authorize endpoint active.",
       userId: req.params.id,
     });
   } catch (err) {
-    console.error(" Authorize error:", err);
     res.status(500).send({ message: err.message });
   }
 };
 
+// Logout: Destroy the specific session token
 exportsObj.logout = async (req, res) => {
   try {
     const authHeader = req.get("authorization");
@@ -129,7 +93,6 @@ exportsObj.logout = async (req, res) => {
     const deleted = await Session.destroy({ where: { token } });
 
     if (deleted) {
-      console.log("Session deleted successfully.");
       res.send({ message: "User logged out successfully." });
     } else {
       res.status(404).send({ message: "Session not found." });

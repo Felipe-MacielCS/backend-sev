@@ -4,7 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 const Unavailability = sequelize.define(
   "unavailability",
   {
-    unavailabilityID: {
+    ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
