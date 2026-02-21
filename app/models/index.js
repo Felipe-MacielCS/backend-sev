@@ -60,6 +60,21 @@ db.tasklist.belongsToMany(db.usershift, {
   as: "userShifts",
 });
 
+// user to position
+db.user.belongsToMany(db.position, {
+  through: db.userposition,
+  foreignKey: "userID",
+  otherKey: "positionID",
+  onDelete: "CASCADE",
+});
+
+db.position.belongsToMany(db.user, {
+  through: db.userposition,
+  foreignKey: "positionID",
+  otherKey: "userID",
+  onDelete: "CASCADE",
+});
+
 db.notification.hasMany(db.usernotification, { foreignKey: "notificationID" });
 db.usernotification.belongsTo(db.notification, { foreignKey: "notificationID" });
 
