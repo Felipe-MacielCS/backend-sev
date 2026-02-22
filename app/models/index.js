@@ -19,6 +19,8 @@ import TaskListItemStatus from "./tasklistitemstatus.model.js";
 import Unavailable from "./unavailable.model.js";
 import UserPosition from "./userposition.model.js";
 import Position from "./position.model.js";
+import Settings from "./settings.model.js";
+import SettingsValues from "./settingsvalues.model.js";
 
 const db = {};
 db.Sequelize = Sequelize;
@@ -42,6 +44,8 @@ db.swapshiftrequest = SwapShiftRequest;
 db.unavailable = Unavailable;
 db.userposition = UserPosition;
 db.position = Position;
+db.settings = Settings;
+db.settingsvalues = SettingsValues;
 
 // user to shift (through usershift)
 db.user.belongsToMany(db.shift, {
@@ -158,5 +162,17 @@ db.swapshiftrequest.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
 // user to unavailable
 db.user.hasMany(db.unavailable, { foreignKey: "userID", onDelete: "CASCADE" });
 db.unavailable.belongsTo(db.user, { foreignKey: "userID" });
+
+// settings to settingsvalues
+db.settings.hasMany(db.settingsvalues, { foreignKey: "settingID", onDelete: "CASCADE" });
+db.settingsvalues.belongsTo(db.settings, { foreignKey: "settingID" });
+
+// user to settingsvalues
+db.user.hasMany(db.settingsvalues, { foreignKey: "userID", onDelete: "CASCADE" });
+db.settingsvalues.belongsTo(db.user, { foreignKey: "userID" });
+
+// department to settingsvalues
+db.department.hasMany(db.settingsvalues, { foreignKey: "departmentID", onDelete: "CASCADE" });
+db.settingsvalues.belongsTo(db.department, { foreignKey: "departmentID" });
 
 export default db;
