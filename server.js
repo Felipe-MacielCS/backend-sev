@@ -1,4 +1,3 @@
-import "dotenv/config";
 import routes from "./app/routes/index.js";
 import express, { json, urlencoded } from "express"
 import cors from "cors";
@@ -10,16 +9,16 @@ db.sequelize.sync({force: true});
 const app = express();
 
 var corsOptions = {
-  origin: [
-    "http://localhost:8081", 
-    "https://project1.eaglesoftwareteam.com"
-  ],
+  origin: "http://localhost:8081",
   credentials: true
 }
 app.use(cors(corsOptions));
 
+
 app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
+  
 
 app.use("/workerscheduling-t7", routes); 
 
