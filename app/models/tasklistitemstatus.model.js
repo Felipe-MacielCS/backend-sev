@@ -2,40 +2,46 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
 const TaskListItemStatus = sequelize.define(
-  "tasklistitemstatus",
+  "taskListItemStatus",
   {
     ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
+
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+
     status: {
-      type: DataTypes.STRING,
-      allowNull: false, 
+      type: DataTypes.STRING(255),
+      allowNull: false,
     },
+
     date_checked: {
       type: DataTypes.DATE,
       allowNull: true,
     },
+
     checked_by: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
-    taskListItemID: {
+
+    task_list_itemID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    userShiftID: { 
+
+    user_shiftID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
   },
   {
-    tableName: "task_list_item_statuses",
+    tableName: "task_list_item_status",
     timestamps: true,
   }
 );

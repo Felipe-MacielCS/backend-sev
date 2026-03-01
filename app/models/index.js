@@ -175,4 +175,6 @@ db.settingsvalues.belongsTo(db.user, { foreignKey: "userID" });
 db.department.hasMany(db.settingsvalues, { foreignKey: "departmentID", onDelete: "CASCADE" });
 db.settingsvalues.belongsTo(db.department, { foreignKey: "departmentID" });
 
+db.department.hasMany(db.position, { foreignKey: "departmentID" });
+db.position.belongsTo(db.department, { foreignKey: "departmentID" });
 export default db;
