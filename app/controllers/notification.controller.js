@@ -1,124 +1,102 @@
 import db from "../models/index.js";
 const Notification = db.notification;
-const UserNotification = db.usernotification;
 
 const exports = {};
 
-const nowDateTime = () => {
-  const d = new Date();
-  return {
-    date: d.toISOString().slice(0, 10),
-    time: d.toTimeString().slice(0, 8),
+// Create
+exports.create = (req, res) => {
+  const { message, departmentID, type, status } = req.body;
+
+  if (!message) {
+    res.status(400).send({ message: "message is required." });
+    return;
+  }
+
+  const notification = {
+    message,
+    departmentID: departmentID ?? null,
+    type: type ?? null,
+    status: status ?? "active",
   };
+
+  Notification.create(notification)
+    .then((data) => res.send(data))
+    .catch((err) =>
+      res.status(500).send({
+        message: err.message || "Some error occurred while creating the Notification.",
+      })
+    );
 };
 
-// Create Notification (optional delivery)
-exports.create = async (req, res) => {
-  try {
-    const { type, message, departmentID, event, userIDs } = req.body;
+// Read all
+exports.findAll = (req, res) => {
+  const { departmentID, status, type } = req.query;
 
-    if (!type || !message || !departmentID || !event) {
-      return res.status(400).send({
-        message: "type, message, departmentID, and event are required!",
-      });
-    }
+  const where = {};
+  if (departmentID) where.departmentID = departmentID;
+  if (status) where.status = status;
+  if (type) where.type = type;
 
-    const data = await Notification.create({ type, message, departmentID, event });
-
-    if (Array.isArray(userIDs) && userIDs.length > 0) {
-      const { date, time } = nowDateTime();
-      const deliveries = userIDs.map((userID) => ({
-        notificationID: data.ID,
-        userID,
-        date,
-        time,
-      }));
-      await UserNotification.bulkCreate(deliveries);
-    }
-
-    return res.status(201).send({ message: "Notification created successfully!", data });
-  } catch (err) {
-    return res.status(500).send({
-      message: err.message || "Some error occurred while creating the Notification.",
-    });
-  }
+  Notification.findAll({ where })
+    .then((data) => res.send(data))
+    .catch((err) =>
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving notifications.",
+      })
+    );
 };
 
-// List Notifications (optional departmentID)
-exports.findAll = async (req, res) => {
-  try {
-    const { departmentID, page = 1, limit = 10 } = req.query;
-    const where = {};
-    if (departmentID) where.departmentID = departmentID;
+// Read one
+exports.findOne = (req, res) => {
+  const id = req.params.id;
 
-    const offset = (page - 1) * limit;
-
-    const { count, rows } = await Notification.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [["createdAt", "DESC"]],
-    });
-
-    return res.send({
-      totalItems: count,
-      notifications: rows,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
-    });
-  } catch (err) {
-    return res.status(500).send({
-      message: err.message || "Some error occurred while retrieving notifications.",
-    });
-  }
+  Notification.findByPk(id)
+    .then((data) => {
+      if (data) res.send(data);
+      else res.status(404).send({ message: `Cannot find Notification with ID=${id}.` });
+    })
+    .catch(() =>
+      res.status(500).send({ message: "Error retrieving Notification with ID=" + id })
+    );
 };
 
-// Get one Notification
-exports.findOne = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const data = await Notification.findByPk(id);
+// Update
+exports.update = (req, res) => {
+  const id = req.params.id;
 
-    if (!data) return res.status(404).send({ message: `Notification with ID=${id} not found.` });
-    return res.send(data);
-  } catch (err) {
-    return res.status(500).send({
-      message: `Error retrieving Notification with ID=${req.params.id}`,
-    });
+  if (!req.body || Object.keys(req.body).length === 0) {
+    res.status(400).send({ message: "Request body cannot be empty." });
+    return;
   }
+
+  Notification.update(req.body, { where: { ID: id } })
+    .then((num) => {
+      const affected = Array.isArray(num) ? num[0] : num;
+
+      if (affected === 1) res.send({ message: "Notification updated successfully." });
+      else {
+        res.send({
+          message: `Cannot update Notification with ID=${id}. Maybe not found or nothing changed.`,
+        });
+      }
+    })
+    .catch(() =>
+      res.status(500).send({ message: "Error updating Notification with ID=" + id })
+    );
 };
 
-// Deliver existing Notification to userIDs
-exports.deliver = async (req, res) => {
-  try {
-    const notificationID = req.params.notificationID;
-    const { userIDs } = req.body;
+// Delete
+exports.delete = (req, res) => {
+  const id = req.params.id;
 
-    if (!Array.isArray(userIDs) || userIDs.length === 0) {
-      return res.status(400).send({ message: "userIDs (array) is required!" });
-    }
-
-    const notification = await Notification.findByPk(notificationID);
-    if (!notification) {
-      return res.status(404).send({ message: `Notification with ID=${notificationID} not found.` });
-    }
-
-    const { date, time } = nowDateTime();
-    const deliveries = userIDs.map((userID) => ({
-      notificationID: notification.ID,
-      userID,
-      date,
-      time,
-    }));
-
-    await UserNotification.bulkCreate(deliveries);
-
-    return res.send({ message: "Notification delivered successfully!", count: deliveries.length });
-  } catch (err) {
-    return res.status(500).send({
-      message: err.message || "Error delivering notification.",
-    });
-  }
+  Notification.destroy({ where: { ID: id } })
+    .then((num) => {
+      if (num === 1) res.send({ message: "Notification deleted successfully!" });
+      else res.send({ message: `Cannot delete Notification with ID=${id}. Maybe not found!` });
+    })
+    .catch(() =>
+      res.status(500).send({ message: "Could not delete Notification with ID=" + id })
+    );
 };
 
 export default exports;
