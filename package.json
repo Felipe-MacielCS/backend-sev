@@ -16,6 +16,7 @@
     "express": "^4.19.2",
     "google-auth-library": "^9.10.0",
     "mysql2": "^3.9.7",
+    "node-ical": "^0.25.4",
     "sequelize": "^6.37.3"
   },
   "repository": {
