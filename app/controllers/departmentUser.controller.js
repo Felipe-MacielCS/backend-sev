@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-const DepartmentUser = db.departmentUser;
+const DepartmentUser = db.departmentusers;
 const Op = db.Sequelize.Op;
 
 const exports = {};
