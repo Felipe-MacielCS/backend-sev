@@ -1,8 +1,11 @@
 import calendar from "../controllers/calendar.controller.js";
+import authenticate from "../authorization/authorization.js";
 import { Router } from "express";
 
 const router = Router();
 
-router.post("/sync", calendar.syncCalendar);
+router.get("/status", [authenticate], calendar.status);
+router.post("/connect", [authenticate], calendar.connect);
+router.post("/sync", [authenticate], calendar.syncCalendar);
 
 export default router;
