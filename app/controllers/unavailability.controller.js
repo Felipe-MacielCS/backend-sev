@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-const Unavailability = db.unavailability;
+const Unavailability = db.unavailable;
 const User = db.user;
 const Op = db.Sequelize.Op;
 
