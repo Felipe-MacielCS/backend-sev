@@ -5,6 +5,34 @@ const Op = db.Sequelize.Op;
 
 const exports = {};
 
+const normalizeTime = (value, fallback) => {
+  if (!value) return fallback;
+  return String(value).substring(0, 8);
+};
+
+const toDateTime = (dateValue, timeValue, isEndBoundary = false) => {
+  if (!dateValue) return null;
+  const time = normalizeTime(timeValue, isEndBoundary ? "23:59:59" : "00:00:00");
+  return new Date(`${dateValue}T${time}`);
+};
+
+const rangesOverlap = (aStart, aEnd, bStart, bEnd) => {
+  return aStart < bEnd && bStart < aEnd;
+};
+
+const hasAnyOverlap = (newRange, existingRows) => {
+  for (const row of existingRows) {
+    const existingStart = toDateTime(row.start_date, row.start_time, false);
+    const existingEnd = toDateTime(row.end_date, row.end_time, true);
+    if (!existingStart || !existingEnd) continue;
+
+    if (rangesOverlap(newRange.start, newRange.end, existingStart, existingEnd)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 exports.create = async (req, res) => {
   try {
     if (!req.body.userID) {
@@ -53,7 +81,22 @@ exports.create = async (req, res) => {
       });
     }
 
-    const overlapping = await Unavailability.findOne({
+    const newStartDateTime = toDateTime(req.body.start_date, req.body.start_time, false);
+    const newEndDateTime = toDateTime(req.body.end_date, req.body.end_time, true);
+
+    if (!newStartDateTime || !newEndDateTime || Number.isNaN(newStartDateTime.getTime()) || Number.isNaN(newEndDateTime.getTime())) {
+      return res.status(400).send({
+        message: "Invalid date/time format."
+      });
+    }
+
+    if (newEndDateTime <= newStartDateTime) {
+      return res.status(400).send({
+        message: "End date/time must be after start date/time."
+      });
+    }
+
+    const overlappingCandidates = await Unavailability.findAll({
       where: {
         userID: req.body.userID,
         [Op.or]: [
@@ -73,7 +116,7 @@ exports.create = async (req, res) => {
       }
     });
 
-    if (overlapping) {
+    if (hasAnyOverlap({ start: newStartDateTime, end: newEndDateTime }, overlappingCandidates)) {
       return res.status(409).send({ 
         message: "User already has an overlapping unavailability period!" 
       });
@@ -241,49 +284,62 @@ exports.update = async (req, res) => {
       });
     }
 
+    const hasStartTime = Object.prototype.hasOwnProperty.call(req.body, "start_time");
+    const hasEndTime = Object.prototype.hasOwnProperty.call(req.body, "end_time");
+
     const newStartDate = req.body.start_date || unavailability.start_date;
     const newEndDate = req.body.end_date || unavailability.end_date;
+    const newStartTime = hasStartTime ? req.body.start_time : unavailability.start_time;
+    const newEndTime = hasEndTime ? req.body.end_time : unavailability.end_time;
 
-    if (new Date(newEndDate) < new Date(newStartDate)) {
-      return res.status(400).send({ 
-        message: "End date must be after or equal to start date!" 
+    const newStartDateTime = toDateTime(newStartDate, newStartTime, false);
+    const newEndDateTime = toDateTime(newEndDate, newEndTime, true);
+
+    if (!newStartDateTime || !newEndDateTime || Number.isNaN(newStartDateTime.getTime()) || Number.isNaN(newEndDateTime.getTime())) {
+      return res.status(400).send({
+        message: "Invalid date/time format."
       });
     }
 
-    if (req.body.start_date || req.body.end_date) {
-      const overlapping = await Unavailability.findOne({
-        where: {
-          unavailabilityID: { [Op.ne]: unavailabilityID },
-          userID: unavailability.userID,
-          [Op.or]: [
-            {
-              start_date: { [Op.lte]: newStartDate },
-              end_date: { [Op.gte]: newStartDate }
-            },
-            {
-              start_date: { [Op.lte]: newEndDate },
-              end_date: { [Op.gte]: newEndDate }
-            },
-            {
-              start_date: { [Op.gte]: newStartDate },
-              end_date: { [Op.lte]: newEndDate }
-            }
-          ]
-        }
+    if (newEndDateTime <= newStartDateTime) {
+      return res.status(400).send({
+        message: "End date/time must be after start date/time."
       });
+    }
 
-      if (overlapping) {
-        return res.status(409).send({ 
-          message: "Updated dates would overlap with another unavailability period!" 
-        });
+    const overlappingCandidates = await Unavailability.findAll({
+      where: {
+        ID: { [Op.ne]: unavailabilityID },
+        userID: unavailability.userID,
+        [Op.or]: [
+          {
+            start_date: { [Op.lte]: newStartDate },
+            end_date: { [Op.gte]: newStartDate }
+          },
+          {
+            start_date: { [Op.lte]: newEndDate },
+            end_date: { [Op.gte]: newEndDate }
+          },
+          {
+            start_date: { [Op.gte]: newStartDate },
+            end_date: { [Op.lte]: newEndDate }
+          }
+        ]
       }
+    });
+
+    if (hasAnyOverlap({ start: newStartDateTime, end: newEndDateTime }, overlappingCandidates)) {
+      return res.status(409).send({
+        message: "Updated dates would overlap with another unavailability period!"
+      });
     }
 
     delete req.body.userID;
     delete req.body.unavailabilityID;
+    delete req.body.ID;
 
     const [num] = await Unavailability.update(req.body, { 
-      where: { unavailabilityID: unavailabilityID } 
+      where: { ID: unavailabilityID } 
     });
 
     if (num === 1) {
@@ -309,7 +365,7 @@ exports.delete = async (req, res) => {
     const unavailabilityID = req.params.id;
 
     const num = await Unavailability.destroy({ 
-      where: { unavailabilityID: unavailabilityID } 
+      where: { ID: unavailabilityID } 
     });
 
     if (num === 1) {
