@@ -151,6 +151,7 @@ exportsObj.syncCalendar = async (req, res) => {
     const userID = normalizeUserID(req.body.userID);
     const inputUrl = normalizeIcalUrl(req.body.icalUrl);
     const skipAllDay = req.body.skipAllDay !== false;
+    const minDurationMinutes = Math.max(1, Number.parseInt(req.body.minDurationMinutes ?? 1, 10) || 1);
 
     if (!userID) {
       return res.status(400).send({ message: "Missing user ID." });
@@ -169,7 +170,8 @@ exportsObj.syncCalendar = async (req, res) => {
     let veventCount = 0;
     let skippedAllDayCount = 0;
     let skippedInvalidCount = 0;
-    let skippedZeroDurationCount = 0;
+    let skippedNoPeriodCount = 0;
+    let skippedShortDurationCount = 0;
 
     // Delete previous Google imports to avoid duplicates.
     await Unavailable.destroy({ where: { userID, reason: "Google Sync" } });
@@ -195,9 +197,17 @@ exportsObj.syncCalendar = async (req, res) => {
       const start_time = dateToSqlTime(startDate);
       const end_time = dateToSqlTime(endDate);
 
-      // Skip zero-duration or backwards entries.
-      if (endDate.getTime() <= startDate.getTime()) {
-        skippedZeroDurationCount += 1;
+      const durationMinutes = (endDate.getTime() - startDate.getTime()) / 60000;
+
+      // Must be a real timed period (start < end).
+      if (durationMinutes <= 0) {
+        skippedNoPeriodCount += 1;
+        continue;
+      }
+
+      // Optional floor to avoid tiny reminder-style blocks.
+      if (durationMinutes < minDurationMinutes) {
+        skippedShortDurationCount += 1;
         continue;
       }
 
@@ -227,7 +237,9 @@ exportsObj.syncCalendar = async (req, res) => {
         vevents: veventCount,
         skippedAllDay: skippedAllDayCount,
         skippedInvalid: skippedInvalidCount,
-        skippedZeroDuration: skippedZeroDurationCount,
+        skippedNoPeriod: skippedNoPeriodCount,
+        skippedShortDuration: skippedShortDurationCount,
+        minDurationMinutes,
       },
       message: "Calendar sync complete.",
     });
