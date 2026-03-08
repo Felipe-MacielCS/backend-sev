@@ -150,8 +150,10 @@ exportsObj.syncCalendar = async (req, res) => {
   try {
     const userID = normalizeUserID(req.body.userID);
     const inputUrl = normalizeIcalUrl(req.body.icalUrl);
-    const skipAllDay = req.body.skipAllDay !== false;
-    const minDurationMinutes = Math.max(1, Number.parseInt(req.body.minDurationMinutes ?? 1, 10) || 1);
+    const skipAllDay = req.body.skipAllDay === true;
+    const minDurationMinutes = Math.max(0, Number.parseInt(req.body.minDurationMinutes ?? 0, 10) || 0);
+    const defaultNoPeriodDurationMinutes = Math.max(1, Number.parseInt(req.body.defaultNoPeriodDurationMinutes ?? 30, 10) || 30);
+    const defaultAllDayDurationMinutes = Math.max(1, Number.parseInt(req.body.defaultAllDayDurationMinutes ?? 1440, 10) || 1440);
 
     if (!userID) {
       return res.status(400).send({ message: "Missing user ID." });
@@ -172,6 +174,7 @@ exportsObj.syncCalendar = async (req, res) => {
     let skippedInvalidCount = 0;
     let skippedNoPeriodCount = 0;
     let skippedShortDurationCount = 0;
+    let importedAssumedPeriodCount = 0;
 
     // Delete previous Google imports to avoid duplicates.
     await Unavailable.destroy({ where: { userID, reason: "Google Sync" } });
@@ -181,8 +184,10 @@ exportsObj.syncCalendar = async (req, res) => {
       veventCount += 1;
 
       const startDate = new Date(event.start);
-      const endDate = new Date(event.end);
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      let endDate = new Date(event.end);
+      const startIsValid = !Number.isNaN(startDate.getTime());
+      const endIsValid = !Number.isNaN(endDate.getTime());
+      if (!startIsValid) {
         skippedInvalidCount += 1;
         continue;
       }
@@ -192,17 +197,17 @@ exportsObj.syncCalendar = async (req, res) => {
         continue;
       }
 
-      const start_date = dateToSqlDate(startDate);
-      const end_date = dateToSqlDate(endDate);
-      const start_time = dateToSqlTime(startDate);
-      const end_time = dateToSqlTime(endDate);
+      let durationMinutes = endIsValid ? (endDate.getTime() - startDate.getTime()) / 60000 : -1;
 
-      const durationMinutes = (endDate.getTime() - startDate.getTime()) / 60000;
-
-      // Must be a real timed period (start < end).
+      // Some feeds include DTSTART without a usable DTEND for timed items.
+      // Import those as a short default block instead of discarding them.
       if (durationMinutes <= 0) {
-        skippedNoPeriodCount += 1;
-        continue;
+        const fallbackDurationMinutes = event.datetype === "date"
+          ? defaultAllDayDurationMinutes
+          : defaultNoPeriodDurationMinutes;
+        endDate = new Date(startDate.getTime() + fallbackDurationMinutes * 60000);
+        durationMinutes = fallbackDurationMinutes;
+        importedAssumedPeriodCount += 1;
       }
 
       // Optional floor to avoid tiny reminder-style blocks.
@@ -210,6 +215,11 @@ exportsObj.syncCalendar = async (req, res) => {
         skippedShortDurationCount += 1;
         continue;
       }
+
+      const start_date = dateToSqlDate(startDate);
+      const end_date = dateToSqlDate(endDate);
+      const start_time = dateToSqlTime(startDate);
+      const end_time = dateToSqlTime(endDate);
 
       const newDbBlock = await Unavailable.create({
         userID,
@@ -223,8 +233,8 @@ exportsObj.syncCalendar = async (req, res) => {
       formattedEvents.push({
         id: newDbBlock.ID,
         title: "Unavailable",
-        start: event.start,
-        end: event.end,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
         color: "#F44336",
         display: "block",
       });
@@ -240,6 +250,9 @@ exportsObj.syncCalendar = async (req, res) => {
         skippedNoPeriod: skippedNoPeriodCount,
         skippedShortDuration: skippedShortDurationCount,
         minDurationMinutes,
+        assumedNoPeriod: importedAssumedPeriodCount,
+        defaultNoPeriodDurationMinutes,
+        defaultAllDayDurationMinutes,
       },
       message: "Calendar sync complete.",
     });
@@ -250,3 +263,7 @@ exportsObj.syncCalendar = async (req, res) => {
 };
 
 export default exportsObj;
+
+
+
+
