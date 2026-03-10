@@ -14,10 +14,10 @@ exports.create = (req, res) => {
     positionID,
   } = req.body;
 
-  if (!shift_date || !start_time || !end_time || !scheduleID || !positionID) {
+  if (!shift_date || !start_time || !end_time || !scheduleID) {
     res.status(400).send({
       message:
-        "shift_date, start_time, end_time, scheduleID, and positionID are required.",
+        "shift_date, start_time, end_time, and scheduleID are required.",
     });
     return;
   }
@@ -28,7 +28,7 @@ exports.create = (req, res) => {
     end_time,
     workers_required: workers_required ?? 1,
     scheduleID,
-    positionID,
+    positionID: positionID ?? null,
   };
 
   Shift.create(shift)
