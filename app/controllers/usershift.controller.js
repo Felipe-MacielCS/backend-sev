@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-const UserShift = db.userShift;
+const UserShift = db.usershift;
 
 const exports = {};
 

@@ -41,7 +41,7 @@ const Shift = sequelize.define(
 
     positionID: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {

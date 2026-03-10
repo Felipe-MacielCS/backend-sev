@@ -1,15 +1,31 @@
 import db from "../models/index.js";
 const Schedule = db.schedule;
+const Op = db.Sequelize.Op;
 
 const exports = {};
 
+const statusFromType = (type) => (String(type || "").toLowerCase() === "official" ? "published" : "draft");
+
+const enforceSingleOfficial = async (departmentID, currentScheduleID) => {
+  await Schedule.update(
+    { type: "draft", status: "draft" },
+    {
+      where: {
+        departmentID,
+        ID: { [Op.ne]: currentScheduleID },
+        type: { [Op.ne]: "template" },
+      },
+    }
+  );
+};
+
 exports.create = async (req, res) => {
   try {
-    const { start_date, end_date, status, type, departmentID } = req.body;
+    const { name, start_date, end_date, status, type, departmentID } = req.body;
 
-    if (!start_date || !end_date || !status || !type || !departmentID) {
+    if (!start_date || !end_date || !type || !departmentID) {
       return res.status(400).send({
-        message: "start_date, end_date, status, type, and departmentID are required!",
+        message: "start_date, end_date, type, and departmentID are required!",
       });
     }
 
@@ -17,7 +33,18 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "start_date cannot be after end_date!" });
     }
 
-    const data = await Schedule.create({ start_date, end_date, status, type, departmentID });
+    const data = await Schedule.create({
+      name: name ?? null,
+      start_date,
+      end_date,
+      status: status ?? statusFromType(type),
+      type,
+      departmentID,
+    });
+
+    if (data.type === "official" || data.status === "published") {
+      await enforceSingleOfficial(data.departmentID, data.ID);
+    }
 
     return res.status(201).send({ message: "Schedule created successfully!", data });
   } catch (err) {
@@ -84,12 +111,19 @@ exports.update = async (req, res) => {
       }
     }
 
+    if (req.body.type && !("status" in req.body)) {
+      req.body.status = statusFromType(req.body.type);
+    }
+
     delete req.body.ID;
 
     const [num] = await Schedule.update(req.body, { where: { ID: id } });
 
     if (num === 1) {
       const updated = await Schedule.findByPk(id);
+      if (updated && (updated.type === "official" || updated.status === "published")) {
+        await enforceSingleOfficial(updated.departmentID, updated.ID);
+      }
       return res.send({ message: "Schedule updated successfully.", data: updated });
     }
 
