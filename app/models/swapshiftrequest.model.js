@@ -18,6 +18,10 @@ const SwapShiftRequest = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     tableName: "swap_shift_requests",
