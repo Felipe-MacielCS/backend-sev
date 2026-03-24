@@ -1,5 +1,6 @@
 import db from "../models/index.js";
-const SwapShiftRequest = db.swapShiftRequest;
+const SwapShiftRequest = db.swapshiftrequest;
+const UserShift = db.usershift;
 const Op = db.Sequelize.Op;
 
 const exports = {};
@@ -14,6 +15,7 @@ exports.create = (req, res) => {
   const request = {
     status: req.body.status || "Pending",
     userShiftID: req.body.userShiftID,
+    reason: String(req.body.reason || "").trim() || null,
   };
 
   SwapShiftRequest.create(request)
@@ -54,27 +56,85 @@ exports.findOne = (req, res) => {
 };
 
 // Update a request (e.g., a manager approving/denying it)
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
   const id = req.params.id;
 
-  SwapShiftRequest.update(req.body, { where: { swapShiftRequestID: id } })
-    .then((num) => {
-      if (num == 1) {
-        res.send({ message: "Request updated successfully." });
-      } else {
-        res.send({ message: `Cannot update request with id=${id}.` });
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).send({ message: "Request body cannot be empty." });
+  }
+
+  const transaction = await db.sequelize.transaction();
+
+  try {
+    const request = await SwapShiftRequest.findByPk(id, { transaction });
+    if (!request) {
+      await transaction.rollback();
+      return res.status(404).send({ message: `Request with id=${id} not found.` });
+    }
+
+    const requestedStatus = String(req.body.status || request.status || "").trim();
+
+    if (requestedStatus.toLowerCase() === "accepted") {
+      const userShift = await UserShift.findByPk(request.userShiftID, { transaction });
+      if (!userShift) {
+        await transaction.rollback();
+        return res.status(404).send({
+          message: `UserShift with ID=${request.userShiftID} was not found.`,
+        });
       }
-    })
-    .catch((err) =>
-      res.status(500).send({ message: "Error updating request with id=" + id })
-    );
+
+      if (!req.userID) {
+        await transaction.rollback();
+        return res.status(401).send({ message: "Authenticated user not found." });
+      }
+
+      if (Number(userShift.userID) === Number(req.userID)) {
+        await transaction.rollback();
+        return res.status(400).send({ message: "You already own this shift." });
+      }
+
+      await userShift.update({ userID: req.userID }, { transaction });
+      await request.update({ status: "Accepted" }, { transaction });
+
+      await SwapShiftRequest.update(
+        { status: "Cancelled" },
+        {
+          where: {
+            userShiftID: request.userShiftID,
+            ID: { [Op.ne]: request.ID },
+            status: { [Op.notIn]: ["Accepted", "Cancelled"] },
+          },
+          transaction,
+        }
+      );
+
+      await transaction.commit();
+      return res.send({
+        message: "Request accepted and shift reassigned successfully.",
+        requestID: request.ID,
+        userShiftID: userShift.ID,
+        assignedUserID: req.userID,
+      });
+    }
+
+    await request.update(req.body, { transaction });
+    await transaction.commit();
+    return res.send({ message: "Request updated successfully." });
+  } catch (err) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    return res.status(500).send({
+      message: err.message || "Error updating request with id=" + id,
+    });
+  }
 };
 
 // Delete a request
 exports.delete = (req, res) => {
   const id = req.params.id;
 
-  SwapShiftRequest.destroy({ where: { swapShiftRequestID: id } })
+  SwapShiftRequest.destroy({ where: { ID: id } })
     .then((num) => {
       if (num == 1) {
         res.send({ message: "Request deleted successfully!" });

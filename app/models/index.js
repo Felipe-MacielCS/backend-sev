@@ -156,8 +156,8 @@ db.usershift.hasMany(db.clockinout, { foreignKey: "user_shift_id", onDelete: "CA
 db.clockinout.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
 
 // usershift to swapshiftrequest
-db.usershift.hasMany(db.swapshiftrequest, { foreignKey: "user_shift_id", onDelete: "CASCADE" });
-db.swapshiftrequest.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
+db.usershift.hasMany(db.swapshiftrequest, { foreignKey: "userShiftID", onDelete: "CASCADE" });
+db.swapshiftrequest.belongsTo(db.usershift, { foreignKey: "userShiftID" });
 
 // user to unavailable
 db.user.hasMany(db.unavailable, { foreignKey: "userID", onDelete: "CASCADE" });
