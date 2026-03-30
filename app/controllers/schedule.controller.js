@@ -48,6 +48,7 @@ exports.create = async (req, res) => {
 
     return res.status(201).send({ message: "Schedule created successfully!", data });
   } catch (err) {
+    console.error("Schedule create failed:", err);
     return res.status(500).send({
       message: err.message || "Some error occurred while creating the Schedule.",
     });
