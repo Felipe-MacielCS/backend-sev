@@ -2,7 +2,6 @@ import db from "../models/index.js";
 const Position = db.position;
 const User = db.user;
 const Department = db.department;
-const Company = db.company;
 
 const exports = {};
 
@@ -14,19 +13,6 @@ exports.create = async (req, res) => {
       });
     }
 
-    if (!req.body.companyID) {
-      return res.status(400).send({ 
-        message: "Company ID is required!" 
-      });
-    }
-
-    const company = await Company.findByPk(req.body.companyID);
-    if (!company) {
-      return res.status(404).send({ 
-        message: "Company not found!" 
-      });
-    }
-
     if (req.body.departmentID) {
       const department = await Department.findByPk(req.body.departmentID);
       if (!department) {
@@ -34,24 +20,18 @@ exports.create = async (req, res) => {
           message: "Department not found!" 
         });
       }
-      
-      if (department.companyID !== req.body.companyID) {
-        return res.status(400).send({ 
-          message: "Department does not belong to the specified company!" 
-        });
-      }
     }
 
     const existingPosition = await Position.findOne({
       where: {
         title: req.body.title,
-        companyID: req.body.companyID
+        departmentID: req.body.departmentID || null
       }
     });
 
     if (existingPosition) {
       return res.status(409).send({ 
-        message: `Position with title "${req.body.title}" already exists in this company!` 
+        message: `Position with title "${req.body.title}" already exists in this department!` 
       });
     }
 
@@ -59,7 +39,6 @@ exports.create = async (req, res) => {
       title: req.body.title,
       description: req.body.description || null,
       departmentID: req.body.departmentID || null,
-      companyID: req.body.companyID,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     };
 
@@ -78,13 +57,9 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
-    const { companyID, departmentID, isActive, page = 1, limit = 10 } = req.query;
+    const { departmentID, isActive, page = 1, limit = 10 } = req.query;
     
     const where = {};
-    
-    if (companyID) {
-      where.companyID = companyID;
-    }
     
     if (departmentID) {
       where.departmentID = departmentID;
@@ -101,17 +76,12 @@ exports.findAll = async (req, res) => {
       include: [
         {
           model: Department,
-          attributes: ["departmentID", "name"],
-          required: false
-        },
-        {
-          model: Company,
-          attributes: ["companyID", "name"],
+          attributes: ["ID", "name"],
           required: false
         },
         {
           model: User,
-          attributes: ["userID", "name", "email"],
+          attributes: ["ID", "name", "email"],
           required: false,
           through: { attributes: [] } 
         }
@@ -142,17 +112,12 @@ exports.findOne = async (req, res) => {
       include: [
         {
           model: Department,
-          attributes: ["departmentID", "name"],
-          required: false
-        },
-        {
-          model: Company,
-          attributes: ["companyID", "name"],
+          attributes: ["ID", "name"],
           required: false
         },
         {
           model: User,
-          attributes: ["userID", "name", "email", "isAdmin"],
+          attributes: ["ID", "name", "email"],
           required: false,
           through: { attributes: [] }
         }
@@ -191,31 +156,24 @@ exports.update = async (req, res) => {
           message: "Department not found!" 
         });
       }
-      
-      if (department.companyID !== position.companyID) {
-        return res.status(400).send({ 
-          message: "Department does not belong to the position's company!" 
-        });
-      }
     }
 
     if (req.body.title && req.body.title !== position.title) {
       const existingPosition = await Position.findOne({
         where: {
           title: req.body.title,
-          companyID: position.companyID,
+          departmentID: req.body.departmentID ?? position.departmentID ?? null,
           positionID: { [db.Sequelize.Op.ne]: positionID }
         }
       });
 
       if (existingPosition) {
         return res.status(409).send({ 
-          message: `Position with title "${req.body.title}" already exists in this company!` 
+          message: `Position with title "${req.body.title}" already exists in this department!` 
         });
       }
     }
 
-    delete req.body.companyID;
     delete req.body.positionID;
 
     const [num] = await Position.update(req.body, { 
@@ -315,7 +273,7 @@ exports.getPositionUsers = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["userID", "name", "email", "isAdmin"],
+          attributes: ["ID", "name", "email"],
           through: { attributes: [] }
         }
       ]

@@ -72,8 +72,8 @@ exports.update = (req, res) => {
     return;
   }
 
-  // Use userID in the where clause to match standardized model PK
-  User.update(req.body, { where: { userID: userID } })
+  // The user model uses ID as its primary key.
+  User.update(req.body, { where: { ID: userID } })
     .then((num) => {
       const affected = Array.isArray(num) ? num[0] : num;
 
