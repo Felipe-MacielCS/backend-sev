@@ -1,15 +1,13 @@
-import unavailabilities from "../controllers/unavailability.controller.js";
+import userPositions from "../controllers/userposition.controller.js";
 import authenticate from "../authorization/authorization.js";
 import { Router } from "express";
 
-const unavailabilityRouter = Router();
+const userPositionRouter = Router();
 
-unavailabilityRouter.post("/", [authenticate], unavailabilities.create);
-unavailabilityRouter.get("/", [authenticate], unavailabilities.findAll);
-unavailabilityRouter.get("/:id", [authenticate], unavailabilities.findOne);
-unavailabilityRouter.get("/user/:userID", [authenticate], unavailabilities.findByUser);
-unavailabilityRouter.put("/:id", [authenticate], unavailabilities.update);
-unavailabilityRouter.delete("/:id", [authenticate], unavailabilities.delete);
-unavailabilityRouter.delete("/user/:userID/past", [authenticate], unavailabilities.deletePast);
+userPositionRouter.post("/", [authenticate], userPositions.create);
+userPositionRouter.get("/", [authenticate], userPositions.findAll);
+userPositionRouter.get("/:id", [authenticate], userPositions.findOne);
+userPositionRouter.delete("/:id", [authenticate], userPositions.delete);
+userPositionRouter.delete("/", [authenticate], userPositions.deleteByPair);
 
-export default unavailabilityRouter;
+export default userPositionRouter;
