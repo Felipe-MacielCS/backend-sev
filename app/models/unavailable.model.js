@@ -14,7 +14,7 @@ const Unavailability = sequelize.define(
       allowNull: false,
       references: {
         model: 'users',
-        key: 'userID'
+        key: 'ID'
       }
     },
     start_date: {
