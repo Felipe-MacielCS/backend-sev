@@ -21,6 +21,8 @@ import UserPosition from "./userposition.model.js";
 import Position from "./position.model.js";
 import Settings from "./settings.model.js";
 import SettingsValues from "./settingsvalues.model.js";
+import Budget from "./budget.model.js";
+import BudgetCost from "./budgetcost.model.js";
 
 const db = {};
 db.Sequelize = Sequelize;
@@ -46,6 +48,8 @@ db.userposition = UserPosition;
 db.position = Position;
 db.settings = Settings;
 db.settingsvalues = SettingsValues;
+db.budget = Budget;
+db.budgetcost = BudgetCost;
 
 // user to shift (through usershift)
 db.user.belongsToMany(db.shift, {
@@ -170,6 +174,13 @@ db.settingsvalues.belongsTo(db.settings, { foreignKey: "settingID" });
 // user to settingsvalues
 db.user.hasMany(db.settingsvalues, { foreignKey: "userID", onDelete: "CASCADE" });
 db.settingsvalues.belongsTo(db.user, { foreignKey: "userID" });
+
+// department to budget
+db.department.hasOne(db.budget, { foreignKey: "departmentID", onDelete: "CASCADE" });
+db.budget.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.department.hasMany(db.budgetcost, { foreignKey: "departmentID", onDelete: "CASCADE" });
+db.budgetcost.belongsTo(db.department, { foreignKey: "departmentID" });
 
 // department to settingsvalues
 db.department.hasMany(db.settingsvalues, { foreignKey: "departmentID", onDelete: "CASCADE" });

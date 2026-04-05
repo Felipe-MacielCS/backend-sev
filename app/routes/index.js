@@ -23,6 +23,8 @@ import UserNotificationRoutes from "./usernotification.routes.js";
 import SettingsRoutes from "./settings.routes.js";
 import SettingsValuesRoutes from "./settingsvalues.routes.js";
 import CalendarRoutes from "./calendar.routes.js";
+import BudgetRoutes from "./budget.routes.js";
+import BudgetCostRoutes from "./budgetcost.routes.js";
 
 router.use("/", AuthRoutes);
 router.use("/users", UserRoutes);
@@ -45,5 +47,7 @@ router.use("/usernotifications", UserNotificationRoutes);
 router.use("/settings", SettingsRoutes);
 router.use("/settingsvalues", SettingsValuesRoutes);
 router.use("/calendar", CalendarRoutes);
+router.use("/budgets", BudgetRoutes);
+router.use("/budget-costs", BudgetCostRoutes);
 
 export default router;
