@@ -23,6 +23,7 @@ import Settings from "./settings.model.js";
 import SettingsValues from "./settingsvalues.model.js";
 import Budget from "./budget.model.js";
 import BudgetCost from "./budgetcost.model.js";
+import Announcement from "./announcement.model.js";
 
 const db = {};
 db.Sequelize = Sequelize;
@@ -50,6 +51,7 @@ db.settings = Settings;
 db.settingsvalues = SettingsValues;
 db.budget = Budget;
 db.budgetcost = BudgetCost;
+db.announcement = Announcement;
 
 // user to shift (through usershift)
 db.user.belongsToMany(db.shift, {
@@ -188,4 +190,10 @@ db.settingsvalues.belongsTo(db.department, { foreignKey: "departmentID" });
 
 db.department.hasMany(db.position, { foreignKey: "departmentID" });
 db.position.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.department.hasMany(db.announcement, { foreignKey: "departmentID", onDelete: "CASCADE" });
+db.announcement.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.user.hasMany(db.announcement, { foreignKey: "createdByUserID", onDelete: "CASCADE" });
+db.announcement.belongsTo(db.user, { foreignKey: "createdByUserID", as: "creator" });
 export default db;
