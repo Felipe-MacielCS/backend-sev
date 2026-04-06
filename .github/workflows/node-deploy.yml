@@ -36,6 +36,8 @@ jobs:
           echo CLIENT_ID = "$CLIENT_ID" >> .env
           echo CLIENT_SECRET = "$CLIENT_SECRET" >> .env
           echo PORT = "$PORT" >> .env
+          echo GMAIL_USER = "$GMAIL_USER" >> .env
+          echo GMAIL_APP_PASSWORD = "$GMAIL_APP_PASSWORD" >> .env
 
       - run: npm run bundle
 
