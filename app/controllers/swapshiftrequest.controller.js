@@ -4,27 +4,47 @@ const UserShift = db.usershift;
 const Op = db.Sequelize.Op;
 
 const exports = {};
+let swapShiftRequestColumnsPromise = null;
+
+const getSwapShiftRequestColumns = async () => {
+  if (!swapShiftRequestColumnsPromise) {
+    swapShiftRequestColumnsPromise = db.sequelize
+      .getQueryInterface()
+      .describeTable("swap_shift_requests")
+      .catch((error) => {
+        swapShiftRequestColumnsPromise = null;
+        throw error;
+      });
+  }
+
+  return swapShiftRequestColumnsPromise;
+};
 
 // Create a new Swap Shift Request
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   if (!req.body.userShiftID) {
     res.status(400).send({ message: "User Shift ID cannot be empty!" });
     return;
   }
 
-  const request = {
-    status: req.body.status || "Pending",
-    userShiftID: req.body.userShiftID,
-    reason: String(req.body.reason || "").trim() || null,
-  };
+  try {
+    const columns = await getSwapShiftRequestColumns();
+    const request = {
+      status: req.body.status || "Pending",
+      userShiftID: req.body.userShiftID,
+    };
 
-  SwapShiftRequest.create(request)
-    .then((data) => res.send(data))
-    .catch((err) =>
-      res.status(500).send({
-        message: err.message || "Error occurred while creating the request.",
-      })
-    );
+    if (Object.prototype.hasOwnProperty.call(columns, "reason")) {
+      request.reason = String(req.body.reason || "").trim() || null;
+    }
+
+    const data = await SwapShiftRequest.create(request);
+    res.send(data);
+  } catch (err) {
+    res.status(500).send({
+      message: err.message || "Error occurred while creating the request.",
+    });
+  }
 };
 
 // Retrieve all requests (can filter by status)
@@ -32,7 +52,10 @@ exports.findAll = (req, res) => {
   const status = req.query.status;
   let condition = status ? { status: { [Op.like]: `%${status}%` } } : null;
 
-  SwapShiftRequest.findAll({ where: condition })
+  SwapShiftRequest.findAll({
+    where: condition,
+    include: [{ model: UserShift }],
+  })
     .then((data) => res.send(data))
     .catch((err) =>
       res.status(500).send({
@@ -66,6 +89,7 @@ exports.update = async (req, res) => {
   const transaction = await db.sequelize.transaction();
 
   try {
+    const columns = await getSwapShiftRequestColumns();
     const request = await SwapShiftRequest.findByPk(id, { transaction });
     if (!request) {
       await transaction.rollback();
@@ -117,7 +141,12 @@ exports.update = async (req, res) => {
       });
     }
 
-    await request.update(req.body, { transaction });
+    const payload = { ...req.body };
+    if (!Object.prototype.hasOwnProperty.call(columns, "reason")) {
+      delete payload.reason;
+    }
+
+    await request.update(payload, { transaction });
     await transaction.commit();
     return res.send({ message: "Request updated successfully." });
   } catch (err) {
