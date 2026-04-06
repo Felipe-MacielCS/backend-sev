@@ -18,6 +18,8 @@ jobs:
       CLIENT_ID: ${{secrets.CLIENT_ID}}
       CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
       PORT: ${{secrets.PORT}}
+      GMAIL_USER: ${{secrets.GMAIL_USER}}
+      GMAIL_APP_PASSWORD: ${{secrets.GMAIL_APP_PASSWORD}}
     steps:
       - uses: actions/checkout@v5
         with:
