@@ -21,6 +21,10 @@ const TaskListItem = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+    task_listID: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "task_list_items",

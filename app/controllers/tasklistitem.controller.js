@@ -1,12 +1,14 @@
 import db from "../models/index.js";
-const TaskListItem = db.tasklistitem;
+const TaskListItem = db.tasklistitems;
 const Op = db.Sequelize.Op;
 
 const exports = {};
 
 // Create a new Task List Item
 exports.create = (req, res) => {
-  if (!req.body.name || !req.body.taskListID) {
+  const taskListID = req.body.taskListID ?? req.body.task_listID;
+
+  if (!req.body.name || !taskListID) {
     res.status(400).send({ message: "Name and Task List ID are required!" });
     return;
   }
@@ -14,7 +16,8 @@ exports.create = (req, res) => {
   const taskListItem = {
     name: req.body.name,
     description: req.body.description,
-    taskListID: req.body.taskListID,
+    taskListID: taskListID,
+    task_listID: taskListID,
   };
 
   TaskListItem.create(taskListItem)
@@ -28,8 +31,12 @@ exports.create = (req, res) => {
 
 // Retrieve all items (filter by taskListID)
 exports.findAll = (req, res) => {
-  const taskListID = req.query.taskListID;
-  let condition = taskListID ? { taskListID: taskListID } : null;
+  const taskListID = req.query.taskListID ?? req.query.task_listID;
+  const condition = taskListID
+    ? {
+        [Op.or]: [{ taskListID: taskListID }, { task_listID: taskListID }],
+      }
+    : null;
 
   TaskListItem.findAll({ where: condition })
     .then((data) => res.send(data))
@@ -58,9 +65,10 @@ exports.findOne = (req, res) => {
 exports.update = (req, res) => {
   const id = req.params.id;
 
-  TaskListItem.update(req.body, { where: { taskListItemID: id } })
+  TaskListItem.update(req.body, { where: { ID: id } })
     .then((num) => {
-      if (num == 1) res.send({ message: "TaskListItem updated successfully." });
+      const affected = Array.isArray(num) ? num[0] : num;
+      if (affected === 1) res.send({ message: "TaskListItem updated successfully." });
       else res.send({ message: `Cannot update TaskListItem with id=${id}.` });
     })
     .catch((err) =>
@@ -72,9 +80,9 @@ exports.update = (req, res) => {
 exports.delete = (req, res) => {
   const id = req.params.id;
 
-  TaskListItem.destroy({ where: { taskListItemID: id } })
+  TaskListItem.destroy({ where: { ID: id } })
     .then((num) => {
-      if (num == 1) res.send({ message: "TaskListItem deleted successfully!" });
+      if (num === 1) res.send({ message: "TaskListItem deleted successfully!" });
       else res.send({ message: `Cannot delete TaskListItem with id=${id}.` });
     })
     .catch((err) =>
