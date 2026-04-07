@@ -59,9 +59,10 @@ exports.findOne = (req, res) => {
 exports.update = (req, res) => {
   const departmentID = req.params.id;
 
-  Department.update(req.body, { where: { departmentID: departmentID } })
+  Department.update(req.body, { where: { ID: departmentID } })
     .then((num) => {
-      if (num == 1) {
+      const affected = Array.isArray(num) ? num[0] : num;
+      if (affected === 1) {
         res.send({ message: "Department updated successfully." });
       } else {
         res.send({ message: `Cannot update Department with departmentID=${departmentID}.` });
@@ -76,9 +77,9 @@ exports.update = (req, res) => {
 exports.delete = (req, res) => {
   const departmentID = req.params.id;
 
-  Department.destroy({ where: { departmentID: departmentID } })
+  Department.destroy({ where: { ID: departmentID } })
     .then((num) => {
-      if (num == 1) {
+      if (num === 1) {
         res.send({ message: "Department deleted successfully!" });
       } else {
         res.send({ message: `Cannot delete Department with departmentID=${departmentID}.` });

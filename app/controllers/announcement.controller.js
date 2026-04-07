@@ -24,6 +24,7 @@ const AUDIENCE_CONFIG = {
 };
 
 const normalizeText = (value) => String(value || "").trim();
+const normalizeRole = (value) => String(value || "").trim().toLowerCase();
 
 const normalizeAudience = (value) => {
   const key = String(value || "").trim().toLowerCase();
@@ -131,7 +132,7 @@ const sendWithGmail = async ({ recipients, subject, message, html, replyTo }) =>
 
 exportsObj.send = async (req, res) => {
   try {
-    if (String(req.userRole || "").trim() !== "Manager") {
+    if (normalizeRole(req.userRole) !== "manager") {
       return res.status(403).send({ message: "Only managers can send announcements." });
     }
 
@@ -245,8 +246,8 @@ exportsObj.send = async (req, res) => {
 
 exportsObj.findAll = async (req, res) => {
   try {
-    const normalizedRole = String(req.userRole || "").trim();
-    if (normalizedRole !== "Manager" && normalizedRole !== "Worker") {
+    const normalizedRole = normalizeRole(req.userRole);
+    if (normalizedRole !== "manager" && normalizedRole !== "worker") {
       return res.status(403).send({ message: "Only managers and workers can view announcement history." });
     }
 
