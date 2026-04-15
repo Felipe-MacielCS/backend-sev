@@ -1,5 +1,9 @@
 import ical from "node-ical";
 import db from "../models/index.js";
+import {
+  getStudentScheduleConfig,
+  syncStudentScheduleForUser,
+} from "../services/studentSchedule.service.js";
 
 const Unavailable = db.unavailable;
 const Settings = db.settings;
@@ -358,6 +362,43 @@ exportsObj.syncCalendar = async (req, res) => {
   } catch (error) {
     console.error("Calendar Sync Error:", error);
     return res.status(500).send({ message: "Failed to import calendar feed." });
+  }
+};
+
+exportsObj.studentStatus = async (req, res) => {
+  try {
+    const userID = normalizeUserID(req.query.userID);
+    if (!userID) {
+      return res.status(400).send({ message: "Missing user ID." });
+    }
+
+    const config = await getStudentScheduleConfig(userID);
+    return res.send(config);
+  } catch (error) {
+    console.error("Student schedule status error:", error);
+    return res.status(500).send({ message: "Failed to load student schedule status." });
+  }
+};
+
+exportsObj.syncStudentSchedule = async (req, res) => {
+  try {
+    const userID = normalizeUserID(req.body.userID);
+    if (!userID) {
+      return res.status(400).send({ message: "Missing user ID." });
+    }
+
+    const result = await syncStudentScheduleForUser(userID, {
+      termCode: req.body.termCode,
+    });
+
+    if (!result.configured) {
+      return res.status(400).send({ message: "No student ID saved for this worker." });
+    }
+
+    return res.send(result);
+  } catch (error) {
+    console.error("Student schedule sync error:", error);
+    return res.status(500).send({ message: "Failed to import student schedule." });
   }
 };
 
