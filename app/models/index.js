@@ -14,6 +14,7 @@ import ClockInOut from "./clockinout.model.js";
 import Session from "./session.model.js";
 import DepartmentUsers from "./departmentusers.model.js";
 import SwapShiftRequest from "./swapshiftrequest.model.js";
+import SwapShiftResponse from "./swapshiftresponse.model.js";
 import TaskListItems from "./tasklistitems.model.js";
 import TaskListItemStatus from "./tasklistitemstatus.model.js";
 import Unavailable from "./unavailable.model.js";
@@ -44,6 +45,7 @@ db.schedule = Schedule;
 db.clockinout = ClockInOut;
 db.departmentusers = DepartmentUsers;
 db.swapshiftrequest = SwapShiftRequest;
+db.swapshiftresponse = SwapShiftResponse;
 db.unavailable = Unavailable;
 db.userposition = UserPosition;
 db.position = Position;
@@ -164,6 +166,21 @@ db.clockinout.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
 // usershift to swapshiftrequest
 db.usershift.hasMany(db.swapshiftrequest, { foreignKey: "userShiftID", onDelete: "CASCADE" });
 db.swapshiftrequest.belongsTo(db.usershift, { foreignKey: "userShiftID" });
+
+// swapshiftrequest to swapshiftresponse
+db.swapshiftrequest.hasMany(db.swapshiftresponse, {
+  foreignKey: "swapShiftRequestID",
+  onDelete: "CASCADE",
+  as: "responses",
+});
+db.swapshiftresponse.belongsTo(db.swapshiftrequest, { foreignKey: "swapShiftRequestID" });
+
+// user to swapshiftresponse
+db.user.hasMany(db.swapshiftresponse, { foreignKey: "responderUserID", onDelete: "CASCADE" });
+db.swapshiftresponse.belongsTo(db.user, {
+  foreignKey: "responderUserID",
+  as: "responder",
+});
 
 // user to unavailable
 db.user.hasMany(db.unavailable, { foreignKey: "userID", onDelete: "CASCADE" });

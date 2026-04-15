@@ -7,6 +7,7 @@ const UserShiftTaskList = db.usershifttasklist;
 const TaskListItemStatus = db.tasklistitemstatus;
 const ClockInOut = db.clockinout;
 const SwapShiftRequest = db.swapshiftrequest;
+const SwapShiftResponse = db.swapshiftresponse;
 const UserNotification = db.usernotification;
 const Unavailable = db.unavailable;
 const SettingsValues = db.settingsvalues;
@@ -131,6 +132,7 @@ exports.delete = async (req, res) => {
       await TaskListItemStatus.destroy({ where: { user_shiftID: { [Op.in]: userShiftIDs } } });
     }
 
+    await SwapShiftResponse.destroy({ where: { responderUserID: userID } });
     await TaskListItemStatus.destroy({ where: { checked_by: userID } });
     await DepartmentUser.destroy({ where: { userID } });
     await UserPosition.destroy({ where: { userID } });
