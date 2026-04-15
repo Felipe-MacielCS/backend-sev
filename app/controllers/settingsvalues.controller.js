@@ -1,10 +1,20 @@
 import db from "../models/index.js";
 const SettingsValues = db.settingsvalues;
+const Settings = db.settings;
 
 const exports = {};
+const LOCKED_USER_SETTING_KEYS = new Set(["oc_student_id"]);
+
+const getSettingForRow = async (settingID) => {
+  if (!settingID) return null;
+  return Settings.findByPk(settingID);
+};
+
+const isLockedUserSetting = (setting) =>
+  LOCKED_USER_SETTING_KEYS.has(String(setting?.key || "").trim().toLowerCase());
 
 // Create
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   const { settingID, userID, departmentID, value } = req.body;
 
   if (!settingID || value === undefined) {
@@ -24,20 +34,45 @@ exports.create = (req, res) => {
     return;
   }
 
-  const overrideRow = {
-    settingID,
-    userID: hasUser ? userID : null,
-    departmentID: hasDept ? departmentID : null,
-    value,
-  };
+  try {
+    const setting = await getSettingForRow(settingID);
+    if (!setting) {
+      return res.status(404).send({ message: "Setting not found." });
+    }
 
-  SettingsValues.create(overrideRow)
-    .then((data) => res.send(data))
-    .catch((err) =>
-      res.status(400).send({
-        message: err.message || "Some error occurred while creating the SettingsValue.",
-      })
-    );
+    const normalizedValue = String(value ?? "").trim();
+    if (hasUser && isLockedUserSetting(setting)) {
+      const existing = await SettingsValues.findOne({
+        where: {
+          settingID,
+          userID,
+        },
+      });
+
+      if (existing) {
+        if (String(existing.value ?? "").trim() === normalizedValue) {
+          return res.send(existing);
+        }
+        return res.status(409).send({
+          message: "This student ID is locked and cannot be changed once saved.",
+        });
+      }
+    }
+
+    const overrideRow = {
+      settingID,
+      userID: hasUser ? userID : null,
+      departmentID: hasDept ? departmentID : null,
+      value,
+    };
+
+    const data = await SettingsValues.create(overrideRow);
+    return res.send(data);
+  } catch (err) {
+    return res.status(400).send({
+      message: err.message || "Some error occurred while creating the SettingsValue.",
+    });
+  }
 };
 
 // Read all
@@ -73,7 +108,7 @@ exports.findOne = (req, res) => {
 };
 
 // Update
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
   const id = req.params.id;
 
   if (!req.body || Object.keys(req.body).length === 0) {
@@ -100,36 +135,64 @@ exports.update = (req, res) => {
     }
   }
 
-  SettingsValues.update(req.body, { where: { ID: id } })
-    .then((num) => {
-      const affected = Array.isArray(num) ? num[0] : num;
+  try {
+    const existingRow = await SettingsValues.findByPk(id);
+    if (!existingRow) {
+      return res.status(404).send({
+        message: `Cannot find SettingsValue with ID=${id}.`,
+      });
+    }
 
-      if (affected === 1) res.send({ message: "SettingsValue updated successfully." });
-      else {
-        res.send({
-          message: `Cannot update SettingsValue with ID=${id}. Maybe it was not found or nothing changed.`,
+    const setting = await getSettingForRow(existingRow.settingID);
+    if (existingRow.userID && isLockedUserSetting(setting)) {
+      const incomingValue =
+        "value" in req.body ? String(req.body.value ?? "").trim() : String(existingRow.value ?? "").trim();
+      const existingValue = String(existingRow.value ?? "").trim();
+      if (incomingValue !== existingValue) {
+        return res.status(409).send({
+          message: "This student ID is locked and cannot be changed once saved.",
         });
       }
-    })
-    .catch((err) =>
-      res.status(400).send({
-        message: err.message || "Error updating SettingsValue with ID=" + id,
-      })
-    );
+    }
+
+    const num = await SettingsValues.update(req.body, { where: { ID: id } });
+    const affected = Array.isArray(num) ? num[0] : num;
+
+    if (affected === 1) return res.send({ message: "SettingsValue updated successfully." });
+
+    return res.send({
+      message: `Cannot update SettingsValue with ID=${id}. Maybe it was not found or nothing changed.`,
+    });
+  } catch (err) {
+    return res.status(400).send({
+      message: err.message || "Error updating SettingsValue with ID=" + id,
+    });
+  }
 };
 
 // Delete
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  SettingsValues.destroy({ where: { ID: id } })
-    .then((num) => {
-      if (num === 1) res.send({ message: "SettingsValue deleted successfully!" });
-      else res.send({ message: `Cannot delete SettingsValue with ID=${id}. Maybe it was not found!` });
-    })
-    .catch(() =>
-      res.status(500).send({ message: "Could not delete SettingsValue with ID=" + id })
-    );
+  try {
+    const existingRow = await SettingsValues.findByPk(id);
+    if (!existingRow) {
+      return res.send({ message: `Cannot delete SettingsValue with ID=${id}. Maybe it was not found!` });
+    }
+
+    const setting = await getSettingForRow(existingRow.settingID);
+    if (existingRow.userID && isLockedUserSetting(setting)) {
+      return res.status(409).send({
+        message: "This student ID is locked and cannot be removed once saved.",
+      });
+    }
+
+    const num = await SettingsValues.destroy({ where: { ID: id } });
+    if (num === 1) return res.send({ message: "SettingsValue deleted successfully!" });
+    return res.send({ message: `Cannot delete SettingsValue with ID=${id}. Maybe it was not found!` });
+  } catch {
+    return res.status(500).send({ message: "Could not delete SettingsValue with ID=" + id });
+  }
 };
 
 export default exports;
