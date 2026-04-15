@@ -1,3 +1,5 @@
+import http from "node:http";
+import https from "node:https";
 import db from "../models/index.js";
 
 const Settings = db.settings;
@@ -510,32 +512,58 @@ const normalizeCoursePayload = (payload, todaySqlDate) => {
   });
 };
 
-const fetchStudentSchedulePayload = async (studentID, termCode) => {
-  const url = `${STUDENT_SCHEDULE_API_BASE_URL}/${encodeURIComponent(studentID)}/${encodeURIComponent(termCode)}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+const requestText = (url) =>
+  new Promise((resolve, reject) => {
+    const transport = url.startsWith("https://") ? https : http;
+    const req = transport.get(
+      url,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "worker-scheduling/1.0",
+        },
+      },
+      (res) => {
+        const chunks = [];
 
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const bodyText = Buffer.concat(chunks).toString("utf8");
+          const statusCode = Number(res.statusCode || 0);
+
+          if (statusCode < 200 || statusCode >= 300) {
+            return reject(
+              new Error(
+                `Student schedule API request failed with status ${statusCode}${
+                  bodyText ? `: ${bodyText.slice(0, 200)}` : ""
+                }`
+              )
+            );
+          }
+
+          return resolve(bodyText);
+        });
+      }
+    );
+
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`Student schedule API request timed out after ${REQUEST_TIMEOUT_MS}ms.`));
     });
 
-    if (!response.ok) {
-      throw new Error(`Student schedule API request failed with status ${response.status}.`);
-    }
+    req.on("error", (error) => {
+      reject(new Error(`Student schedule API request failed: ${error.message}`));
+    });
+  });
 
-    const bodyText = await response.text();
-    if (!bodyText.trim()) return null;
+const fetchStudentSchedulePayload = async (studentID, termCode) => {
+  const url = `${STUDENT_SCHEDULE_API_BASE_URL}/${encodeURIComponent(studentID)}/${encodeURIComponent(termCode)}`;
+  const bodyText = await requestText(url);
+  if (!bodyText.trim()) return null;
 
-    try {
-      return JSON.parse(bodyText);
-    } catch (error) {
-      throw new Error("Student schedule API did not return valid JSON.");
-    }
-  } finally {
-    clearTimeout(timeout);
+  try {
+    return JSON.parse(bodyText);
+  } catch (error) {
+    throw new Error("Student schedule API did not return valid JSON.");
   }
 };
 

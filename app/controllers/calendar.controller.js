@@ -398,7 +398,9 @@ exportsObj.syncStudentSchedule = async (req, res) => {
     return res.send(result);
   } catch (error) {
     console.error("Student schedule sync error:", error);
-    return res.status(500).send({ message: "Failed to import student schedule." });
+    return res.status(500).send({
+      message: error?.message || "Failed to import student schedule.",
+    });
   }
 };
 
