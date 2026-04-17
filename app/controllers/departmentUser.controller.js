@@ -58,13 +58,15 @@ exports.findOne = (req, res) => {
     );
 };
 
-// Update an assignment (e.g., change a user's role)
+// Update an assignment
 exports.update = (req, res) => {
   const id = req.params.id;
 
-  DepartmentUser.update(req.body, { where: { departmentUserID: id } })
+  DepartmentUser.update(req.body, { where: { ID: id } })
     .then((num) => {
-      if (num == 1) {
+      const affected = Array.isArray(num) ? num[0] : num;
+
+      if (affected === 1) {
         res.send({ message: "Assignment updated successfully." });
       } else {
         res.send({ message: `Cannot update assignment with id=${id}.` });
@@ -79,9 +81,9 @@ exports.update = (req, res) => {
 exports.delete = (req, res) => {
   const id = req.params.id;
 
-  DepartmentUser.destroy({ where: { departmentUserID: id } })
+  DepartmentUser.destroy({ where: { ID: id } })
     .then((num) => {
-      if (num == 1) {
+      if (num === 1) {
         res.send({ message: "User removed from department successfully!" });
       } else {
         res.send({ message: `Cannot delete assignment with id=${id}.` });
@@ -91,5 +93,7 @@ exports.delete = (req, res) => {
       res.status(500).send({ message: "Could not delete assignment with id=" + id })
     );
 };
+
+
 
 export default exports;

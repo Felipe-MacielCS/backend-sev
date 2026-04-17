@@ -1,35 +1,43 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
-const DepartmentUser = sequelize.define(
-  "departmentUser",
+const PayrollOverride = sequelize.define(
+  "payrolloverride",
   {
     ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    userID: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
     departmentID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    role: {
-      type: DataTypes.STRING,
+    user_shift_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
-    employee_pay_rate: {
+    week_start: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    override_hours: {
       type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    override_hourly_rate: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    notes: {
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
   },
   {
-    tableName: "department_users",
+    tableName: "payroll_overrides",
     timestamps: true,
   }
 );
 
-export default DepartmentUser;
+export default PayrollOverride;

@@ -25,6 +25,7 @@ import SettingsValuesRoutes from "./settingsvalues.routes.js";
 import CalendarRoutes from "./calendar.routes.js";
 import BudgetRoutes from "./budget.routes.js";
 import BudgetCostRoutes from "./budgetcost.routes.js";
+import PayrollRoutes from "./payroll.routes.js";
 
 router.use("/", AuthRoutes);
 router.use("/users", UserRoutes);
@@ -49,5 +50,6 @@ router.use("/settingsvalues", SettingsValuesRoutes);
 router.use("/calendar", CalendarRoutes);
 router.use("/budgets", BudgetRoutes);
 router.use("/budget-costs", BudgetCostRoutes);
+router.use("/payroll", PayrollRoutes);
 
 export default router;
