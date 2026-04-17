@@ -4,7 +4,9 @@ import cors from "cors";
 
 import db  from "./app/models/index.js";
 
-db.sequelize.sync({force:true});
+db.sequelize.sync({ alter: true }).catch((error) => {
+  console.error("Database sync failed:", error);
+});
 
 const app = express();
 

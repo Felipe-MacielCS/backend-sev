@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import db from "../models/index.js";
 
 const Announcement = db.announcement;
@@ -7,6 +6,7 @@ const User = db.user;
 const Op = db.Sequelize.Op;
 
 const exportsObj = {};
+let nodemailerModule = null;
 
 const AUDIENCE_CONFIG = {
   "all-workers": {
@@ -89,7 +89,22 @@ const getUserDepartmentID = async (userID) => {
   return prioritizedLink?.departmentID ?? null;
 };
 
-const getGmailTransporter = () => {
+const getNodemailer = async () => {
+  if (nodemailerModule) return nodemailerModule;
+
+  try {
+    nodemailerModule = (await import("nodemailer")).default;
+    return nodemailerModule;
+  } catch (error) {
+    const missingPackageError = new Error(
+      "Email service is not available because nodemailer is not installed. Run npm install in the backend folder."
+    );
+    missingPackageError.cause = error;
+    throw missingPackageError;
+  }
+};
+
+const getGmailTransporter = async () => {
   const gmailUser = normalizeText(process.env.GMAIL_USER);
   const gmailAppPassword = normalizeText(process.env.GMAIL_APP_PASSWORD);
 
@@ -98,6 +113,8 @@ const getGmailTransporter = () => {
       "Gmail is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD in the backend environment."
     );
   }
+
+  const nodemailer = await getNodemailer();
 
   return nodemailer.createTransport({
     service: "gmail",
@@ -111,7 +128,7 @@ const getGmailTransporter = () => {
 const sendWithGmail = async ({ recipients, subject, message, html, replyTo }) => {
   const gmailUser = normalizeText(process.env.GMAIL_USER);
   const fromName = normalizeText(process.env.GMAIL_FROM_NAME) || "Worker Scheduling";
-  const transporter = getGmailTransporter();
+  const transporter = await getGmailTransporter();
 
   await transporter.sendMail({
     from: `"${fromName}" <${gmailUser}>`,
