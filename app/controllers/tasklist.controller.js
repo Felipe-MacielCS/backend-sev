@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-const TaskList = db.taskList;
+const TaskList = db.tasklist;
 
 const exports = {};
 
