@@ -4,6 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 import User from "./user.model.js";
 import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
+import ShiftTaskList from "./shifttasklist.model.js";
 import UserShiftTaskList from "./usershifttasklist.model.js";
 import TaskList from "./tasklist.model.js";
 import Notification from "./notification.model.js";
@@ -30,6 +31,7 @@ db.session = Session;
 db.user = User;
 db.usershift = UserShift;
 db.shift = Shift;
+db.shifttasklist = ShiftTaskList;
 db.usershifttasklist = UserShiftTaskList;
 db.tasklist = TaskList;
 db.tasklistitems = TaskListItems;
@@ -80,6 +82,20 @@ db.tasklist.belongsToMany(db.usershift, {
   through: db.usershifttasklist,
   foreignKey: "task_listID",
   otherKey: "user_shiftID",
+  onDelete: "CASCADE",
+});
+
+// shift to tasklist (through shift_task_list)
+db.shift.belongsToMany(db.tasklist, {
+  through: db.shifttasklist,
+  foreignKey: "shiftID",
+  otherKey: "task_listID",
+  onDelete: "CASCADE",
+});
+db.tasklist.belongsToMany(db.shift, {
+  through: db.shifttasklist,
+  foreignKey: "task_listID",
+  otherKey: "shiftID",
   onDelete: "CASCADE",
 });
 
