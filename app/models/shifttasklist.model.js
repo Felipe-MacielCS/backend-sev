@@ -1,35 +1,29 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
-const TaskListItem = sequelize.define(
-  "tasklistitem",
+const ShiftTaskList = sequelize.define(
+  "shiftTaskList",
   {
     ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    taskListID: {
+
+    shiftID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+
     task_listID: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
   },
   {
-    tableName: "task_list_items",
+    tableName: "shift_task_list",
     timestamps: true,
   }
 );
 
-export default TaskListItem;
+export default ShiftTaskList;
