@@ -4,9 +4,39 @@ const User = db.user;
 const Department = db.department;
 
 const exports = {};
+let positionColorColumnPromise = null;
+
+const normalizeColor = (value) => {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : null;
+};
+
+const ensurePositionColorColumn = async () => {
+  if (!positionColorColumnPromise) {
+    positionColorColumnPromise = db.sequelize
+      .getQueryInterface()
+      .describeTable("positions")
+      .then(async (columns) => {
+        if (!columns.color) {
+          await db.sequelize.getQueryInterface().addColumn("positions", "color", {
+            type: db.Sequelize.STRING(7),
+            allowNull: true,
+          });
+        }
+      })
+      .catch((error) => {
+        positionColorColumnPromise = null;
+        throw error;
+      });
+  }
+
+  return positionColorColumnPromise;
+};
 
 exports.create = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     if (!req.body.title) {
       return res.status(400).send({ 
         message: "Position title is required!" 
@@ -38,6 +68,7 @@ exports.create = async (req, res) => {
     const position = {
       title: req.body.title,
       description: req.body.description || null,
+      color: normalizeColor(req.body.color),
       departmentID: req.body.departmentID || null,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     };
@@ -57,6 +88,8 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     const { departmentID, isActive, page = 1, limit = 10 } = req.query;
     
     const where = {};
@@ -106,6 +139,8 @@ exports.findAll = async (req, res) => {
 
 exports.findOne = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     const positionID = req.params.id;
 
     const data = await Position.findByPk(positionID, {
@@ -140,6 +175,8 @@ exports.findOne = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     const positionID = req.params.id;
 
     const position = await Position.findByPk(positionID);
@@ -175,6 +212,9 @@ exports.update = async (req, res) => {
     }
 
     delete req.body.positionID;
+    if (Object.prototype.hasOwnProperty.call(req.body, "color")) {
+      req.body.color = normalizeColor(req.body.color);
+    }
 
     const [num] = await Position.update(req.body, { 
       where: { positionID: positionID } 
