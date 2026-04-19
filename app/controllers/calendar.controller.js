@@ -392,7 +392,7 @@ exportsObj.syncStudentSchedule = async (req, res) => {
     });
 
     if (!result.configured) {
-      return res.status(400).send({ message: "No student ID saved for this worker." });
+      return res.status(400).send({ message: "No email is available for this worker." });
     }
 
     return res.send(result);
@@ -405,6 +405,7 @@ exportsObj.syncStudentSchedule = async (req, res) => {
 };
 
 export default exportsObj;
+
 
 
 
