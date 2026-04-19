@@ -7,17 +7,7 @@ const SettingsValues = db.settingsvalues;
 const Unavailable = db.unavailable;
 const { Op } = db.Sequelize;
 
-export const STUDENT_ID_SETTING_KEY = "oc_student_id";
 export const STUDENT_SCHEDULE_REASON_PREFIX = "Student Schedule";
-
-const STUDENT_ID_SETTING = {
-  key: STUDENT_ID_SETTING_KEY,
-  label: "OC Student ID",
-  value_type: "string",
-  default_value: "",
-  description: "Oklahoma Christian student ID used to import class times into worker unavailability.",
-  is_active: true,
-};
 
 const STUDENT_SCHEDULE_API_BASE_URL =
   process.env.OC_STUDENT_SCHEDULE_API_BASE_URL ||
@@ -148,10 +138,7 @@ const TITLE_KEYS = [
 const isPlainObject = (value) =>
   Object.prototype.toString.call(value) === "[object Object]";
 
-export const normalizeStudentID = (value) =>
-  String(value ?? "")
-    .trim()
-    .replace(/\D+/g, "");
+const normalizeStudentIdentifier = (value) => String(value ?? "").trim().toLowerCase();
 
 const normalizeTermCode = (value) => {
   const normalized = String(value ?? "").trim().toUpperCase();
@@ -572,28 +559,15 @@ const buildReason = (title) =>
     ? `${STUDENT_SCHEDULE_REASON_PREFIX}: ${title}`
     : STUDENT_SCHEDULE_REASON_PREFIX;
 
-export const ensureStudentIdSetting = async () => {
-  let setting = await Settings.findOne({ where: { key: STUDENT_ID_SETTING_KEY } });
-  if (setting) return setting;
+const getUserForSchedule = async (userID) => db.user.findByPk(userID, { attributes: ["ID", "email"] });
 
-  setting = await Settings.create(STUDENT_ID_SETTING);
-  return setting;
-};
-
-export const getStudentIdForUser = async (userID) => {
-  const setting = await ensureStudentIdSetting();
-  const row = await SettingsValues.findOne({
-    where: {
-      settingID: setting.ID,
-      userID,
-    },
-  });
-
-  return normalizeStudentID(row?.value);
+export const getStudentIdentifierForUser = async (userID) => {
+  const user = await getUserForSchedule(userID);
+  return normalizeStudentIdentifier(user?.email);
 };
 
 export const getStudentScheduleConfig = async (userID) => {
-  const studentID = await getStudentIdForUser(userID);
+  const studentID = await getStudentIdentifierForUser(userID);
   return {
     configured: Boolean(studentID),
     studentID,
@@ -603,13 +577,13 @@ export const getStudentScheduleConfig = async (userID) => {
 };
 
 export const syncStudentScheduleForUser = async (userID, options = {}) => {
-  const studentID = await getStudentIdForUser(userID);
+  const studentID = await getStudentIdentifierForUser(userID);
   if (!studentID) {
     return {
       configured: false,
       imported: 0,
       events: [],
-      message: "No student ID saved for this worker.",
+      message: "No email is available for this worker.",
     };
   }
 
@@ -684,3 +658,5 @@ export const syncStudentScheduleForUser = async (userID, options = {}) => {
     message: "Student schedule sync complete.",
   };
 };
+
+

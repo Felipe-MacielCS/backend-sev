@@ -60,9 +60,7 @@ exportsObj.login = async (req, res) => {
     console.log("New session created for:", email);
 
     const studentScheduleConfig = await getStudentScheduleConfig(user.ID);
-    const needsStudentIdSetup =
-      String(user.role || "").trim().toLowerCase() === "worker" &&
-      !studentScheduleConfig.configured;
+    const needsStudentIdSetup = false;
 
     if (studentScheduleConfig.configured) {
       syncStudentScheduleForUser(user.ID).catch((syncError) => {
@@ -122,3 +120,5 @@ exportsObj.logout = async (req, res) => {
 };
 
 export default exportsObj;
+
+
