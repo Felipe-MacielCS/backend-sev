@@ -25,6 +25,7 @@ import Settings from "./settings.model.js";
 import SettingsValues from "./settingsvalues.model.js";
 import Budget from "./budget.model.js";
 import BudgetCost from "./budgetcost.model.js";
+import PayrollOverride from "./payrolloverride.model.js";
 import Announcement from "./announcement.model.js";
 
 const db = {};
@@ -55,6 +56,8 @@ db.settings = Settings;
 db.settingsvalues = SettingsValues;
 db.budget = Budget;
 db.budgetcost = BudgetCost;
+db.payrolloverride = PayrollOverride;
+
 db.announcement = Announcement;
 
 // user to shift (through usershift)
@@ -216,6 +219,9 @@ db.budget.belongsTo(db.department, { foreignKey: "departmentID" });
 
 db.department.hasMany(db.budgetcost, { foreignKey: "departmentID", onDelete: "CASCADE" });
 db.budgetcost.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.usershift.hasMany(db.payrolloverride, { foreignKey: "user_shift_id", onDelete: "CASCADE" });
+db.payrolloverride.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
 
 // department to settingsvalues
 db.department.hasMany(db.settingsvalues, { foreignKey: "departmentID", onDelete: "CASCADE" });
