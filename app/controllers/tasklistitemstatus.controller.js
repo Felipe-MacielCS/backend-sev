@@ -6,7 +6,10 @@ const exports = {};
 
 // Create a new status entry
 exports.create = (req, res) => {
-  if (!req.body.status || !req.body.taskListItemID || !req.body.userShiftID) {
+  const taskListItemID = req.body.task_list_itemID ?? req.body.taskListItemID;
+  const userShiftID = req.body.user_shiftID ?? req.body.userShiftID;
+
+  if (!req.body.status || !taskListItemID || !userShiftID) {
     res.status(400).send({ message: "Status, Task Item ID, and User Shift ID are required!" });
     return;
   }
@@ -16,8 +19,8 @@ exports.create = (req, res) => {
     status: req.body.status,
     date_checked: req.body.date_checked,
     checked_by: req.body.checked_by,
-    taskListItemID: req.body.taskListItemID,
-    userShiftID: req.body.userShiftID,
+    task_list_itemID: taskListItemID,
+    user_shiftID: userShiftID,
   };
 
   TaskListItemStatus.create(statusData)
@@ -31,10 +34,14 @@ exports.create = (req, res) => {
 
 // Retrieve all status entries (filterable by userShiftID)
 exports.findAll = (req, res) => {
-  const userShiftID = req.query.userShiftID;
-  let condition = userShiftID ? { userShiftID: userShiftID } : null;
+  const userShiftID = req.query.user_shiftID ?? req.query.userShiftID;
+  const taskListItemID = req.query.task_list_itemID ?? req.query.taskListItemID;
+  const condition = {};
 
-  TaskListItemStatus.findAll({ where: condition })
+  if (userShiftID) condition.user_shiftID = userShiftID;
+  if (taskListItemID) condition.task_list_itemID = taskListItemID;
+
+  TaskListItemStatus.findAll({ where: Object.keys(condition).length ? condition : null })
     .then((data) => res.send(data))
     .catch((err) =>
       res.status(500).send({
@@ -61,7 +68,17 @@ exports.findOne = (req, res) => {
 exports.update = (req, res) => {
   const id = req.params.id;
 
-  TaskListItemStatus.update(req.body, { where: { taskListItemStatusID: id } })
+  const updatePayload = { ...req.body };
+  if (Object.prototype.hasOwnProperty.call(updatePayload, "taskListItemID")) {
+    updatePayload.task_list_itemID = updatePayload.taskListItemID;
+    delete updatePayload.taskListItemID;
+  }
+  if (Object.prototype.hasOwnProperty.call(updatePayload, "userShiftID")) {
+    updatePayload.user_shiftID = updatePayload.userShiftID;
+    delete updatePayload.userShiftID;
+  }
+
+  TaskListItemStatus.update(updatePayload, { where: { ID: id } })
     .then((num) => {
       if (num == 1) res.send({ message: "Status updated successfully." });
       else res.send({ message: `Cannot update status with id=${id}.` });
@@ -75,7 +92,7 @@ exports.update = (req, res) => {
 exports.delete = (req, res) => {
   const id = req.params.id;
 
-  TaskListItemStatus.destroy({ where: { taskListItemStatusID: id } })
+  TaskListItemStatus.destroy({ where: { ID: id } })
     .then((num) => {
       if (num == 1) res.send({ message: "Status deleted successfully!" });
       else res.send({ message: `Cannot delete status entry with id=${id}.` });
