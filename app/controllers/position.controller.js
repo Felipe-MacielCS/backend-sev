@@ -2,28 +2,44 @@ import db from "../models/index.js";
 const Position = db.position;
 const User = db.user;
 const Department = db.department;
-const Company = db.company;
 
 const exports = {};
+let positionColorColumnPromise = null;
+
+const normalizeColor = (value) => {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : null;
+};
+
+const ensurePositionColorColumn = async () => {
+  if (!positionColorColumnPromise) {
+    positionColorColumnPromise = db.sequelize
+      .getQueryInterface()
+      .describeTable("positions")
+      .then(async (columns) => {
+        if (!columns.color) {
+          await db.sequelize.getQueryInterface().addColumn("positions", "color", {
+            type: db.Sequelize.STRING(7),
+            allowNull: true,
+          });
+        }
+      })
+      .catch((error) => {
+        positionColorColumnPromise = null;
+        throw error;
+      });
+  }
+
+  return positionColorColumnPromise;
+};
 
 exports.create = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     if (!req.body.title) {
       return res.status(400).send({ 
         message: "Position title is required!" 
-      });
-    }
-
-    if (!req.body.companyID) {
-      return res.status(400).send({ 
-        message: "Company ID is required!" 
-      });
-    }
-
-    const company = await Company.findByPk(req.body.companyID);
-    if (!company) {
-      return res.status(404).send({ 
-        message: "Company not found!" 
       });
     }
 
@@ -34,32 +50,26 @@ exports.create = async (req, res) => {
           message: "Department not found!" 
         });
       }
-      
-      if (department.companyID !== req.body.companyID) {
-        return res.status(400).send({ 
-          message: "Department does not belong to the specified company!" 
-        });
-      }
     }
 
     const existingPosition = await Position.findOne({
       where: {
         title: req.body.title,
-        companyID: req.body.companyID
+        departmentID: req.body.departmentID || null
       }
     });
 
     if (existingPosition) {
       return res.status(409).send({ 
-        message: `Position with title "${req.body.title}" already exists in this company!` 
+        message: `Position with title "${req.body.title}" already exists in this department!` 
       });
     }
 
     const position = {
       title: req.body.title,
       description: req.body.description || null,
+      color: normalizeColor(req.body.color),
       departmentID: req.body.departmentID || null,
-      companyID: req.body.companyID,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true
     };
 
@@ -78,13 +88,11 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
   try {
-    const { companyID, departmentID, isActive, page = 1, limit = 10 } = req.query;
+    await ensurePositionColorColumn();
+
+    const { departmentID, isActive, page = 1, limit = 10 } = req.query;
     
     const where = {};
-    
-    if (companyID) {
-      where.companyID = companyID;
-    }
     
     if (departmentID) {
       where.departmentID = departmentID;
@@ -101,17 +109,12 @@ exports.findAll = async (req, res) => {
       include: [
         {
           model: Department,
-          attributes: ["departmentID", "name"],
-          required: false
-        },
-        {
-          model: Company,
-          attributes: ["companyID", "name"],
+          attributes: ["ID", "name"],
           required: false
         },
         {
           model: User,
-          attributes: ["userID", "name", "email"],
+          attributes: ["ID", "name", "email"],
           required: false,
           through: { attributes: [] } 
         }
@@ -136,23 +139,20 @@ exports.findAll = async (req, res) => {
 
 exports.findOne = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     const positionID = req.params.id;
 
     const data = await Position.findByPk(positionID, {
       include: [
         {
           model: Department,
-          attributes: ["departmentID", "name"],
-          required: false
-        },
-        {
-          model: Company,
-          attributes: ["companyID", "name"],
+          attributes: ["ID", "name"],
           required: false
         },
         {
           model: User,
-          attributes: ["userID", "name", "email", "isAdmin"],
+          attributes: ["ID", "name", "email"],
           required: false,
           through: { attributes: [] }
         }
@@ -175,6 +175,8 @@ exports.findOne = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    await ensurePositionColorColumn();
+
     const positionID = req.params.id;
 
     const position = await Position.findByPk(positionID);
@@ -191,32 +193,28 @@ exports.update = async (req, res) => {
           message: "Department not found!" 
         });
       }
-      
-      if (department.companyID !== position.companyID) {
-        return res.status(400).send({ 
-          message: "Department does not belong to the position's company!" 
-        });
-      }
     }
 
     if (req.body.title && req.body.title !== position.title) {
       const existingPosition = await Position.findOne({
         where: {
           title: req.body.title,
-          companyID: position.companyID,
+          departmentID: req.body.departmentID ?? position.departmentID ?? null,
           positionID: { [db.Sequelize.Op.ne]: positionID }
         }
       });
 
       if (existingPosition) {
         return res.status(409).send({ 
-          message: `Position with title "${req.body.title}" already exists in this company!` 
+          message: `Position with title "${req.body.title}" already exists in this department!` 
         });
       }
     }
 
-    delete req.body.companyID;
     delete req.body.positionID;
+    if (Object.prototype.hasOwnProperty.call(req.body, "color")) {
+      req.body.color = normalizeColor(req.body.color);
+    }
 
     const [num] = await Position.update(req.body, { 
       where: { positionID: positionID } 
@@ -315,7 +313,7 @@ exports.getPositionUsers = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["userID", "name", "email", "isAdmin"],
+          attributes: ["ID", "name", "email"],
           through: { attributes: [] }
         }
       ]

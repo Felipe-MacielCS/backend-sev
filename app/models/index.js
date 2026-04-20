@@ -4,6 +4,7 @@ import sequelize from "../config/sequelizeInstance.js";
 import User from "./user.model.js";
 import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
+import ShiftTaskList from "./shifttasklist.model.js";
 import UserShiftTaskList from "./usershifttasklist.model.js";
 import ShiftTaskList from "./shifttasklist.model.js";
 import TaskList from "./tasklist.model.js";
@@ -15,6 +16,7 @@ import ClockInOut from "./clockinout.model.js";
 import Session from "./session.model.js";
 import DepartmentUsers from "./departmentusers.model.js";
 import SwapShiftRequest from "./swapshiftrequest.model.js";
+import SwapShiftResponse from "./swapshiftresponse.model.js";
 import TaskListItems from "./tasklistitems.model.js";
 import TaskListItemStatus from "./tasklistitemstatus.model.js";
 import Unavailable from "./unavailable.model.js";
@@ -25,6 +27,7 @@ import SettingsValues from "./settingsvalues.model.js";
 import Budget from "./budget.model.js";
 import BudgetCost from "./budgetcost.model.js";
 import PayrollOverride from "./payrolloverride.model.js";
+import Announcement from "./announcement.model.js";
 
 const db = {};
 db.Sequelize = Sequelize;
@@ -34,6 +37,7 @@ db.session = Session;
 db.user = User;
 db.usershift = UserShift;
 db.shift = Shift;
+db.shifttasklist = ShiftTaskList;
 db.usershifttasklist = UserShiftTaskList;
 db.shifttasklist = ShiftTaskList;
 db.tasklist = TaskList;
@@ -46,6 +50,7 @@ db.schedule = Schedule;
 db.clockinout = ClockInOut;
 db.departmentusers = DepartmentUsers;
 db.swapshiftrequest = SwapShiftRequest;
+db.swapshiftresponse = SwapShiftResponse;
 db.unavailable = Unavailable;
 db.userposition = UserPosition;
 db.position = Position;
@@ -55,6 +60,7 @@ db.budget = Budget;
 db.budgetcost = BudgetCost;
 db.payrolloverride = PayrollOverride;
 
+db.announcement = Announcement;
 
 // user to shift (through usershift)
 db.user.belongsToMany(db.shift, {
@@ -182,6 +188,21 @@ db.clockinout.belongsTo(db.usershift, { foreignKey: "user_shift_id" });
 db.usershift.hasMany(db.swapshiftrequest, { foreignKey: "userShiftID", onDelete: "CASCADE" });
 db.swapshiftrequest.belongsTo(db.usershift, { foreignKey: "userShiftID" });
 
+// swapshiftrequest to swapshiftresponse
+db.swapshiftrequest.hasMany(db.swapshiftresponse, {
+  foreignKey: "swapShiftRequestID",
+  onDelete: "CASCADE",
+  as: "responses",
+});
+db.swapshiftresponse.belongsTo(db.swapshiftrequest, { foreignKey: "swapShiftRequestID" });
+
+// user to swapshiftresponse
+db.user.hasMany(db.swapshiftresponse, { foreignKey: "responderUserID", onDelete: "CASCADE" });
+db.swapshiftresponse.belongsTo(db.user, {
+  foreignKey: "responderUserID",
+  as: "responder",
+});
+
 // user to unavailable
 db.user.hasMany(db.unavailable, { foreignKey: "userID", onDelete: "CASCADE" });
 db.unavailable.belongsTo(db.user, { foreignKey: "userID" });
@@ -210,4 +231,10 @@ db.settingsvalues.belongsTo(db.department, { foreignKey: "departmentID" });
 
 db.department.hasMany(db.position, { foreignKey: "departmentID" });
 db.position.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.department.hasMany(db.announcement, { foreignKey: "departmentID", onDelete: "CASCADE" });
+db.announcement.belongsTo(db.department, { foreignKey: "departmentID" });
+
+db.user.hasMany(db.announcement, { foreignKey: "createdByUserID", onDelete: "CASCADE" });
+db.announcement.belongsTo(db.user, { foreignKey: "createdByUserID", as: "creator" });
 export default db;

@@ -1,5 +1,19 @@
 import db from "../models/index.js";
 const User = db.user;
+const DepartmentUser = db.departmentusers;
+const UserPosition = db.userposition;
+const UserShift = db.usershift;
+const UserShiftTaskList = db.usershifttasklist;
+const TaskListItemStatus = db.tasklistitemstatus;
+const ClockInOut = db.clockinout;
+const SwapShiftRequest = db.swapshiftrequest;
+const SwapShiftResponse = db.swapshiftresponse;
+const UserNotification = db.usernotification;
+const Unavailable = db.unavailable;
+const SettingsValues = db.settingsvalues;
+const Announcement = db.announcement;
+const Session = db.session;
+const Op = db.Sequelize.Op;
 
 const exports = {};
 
@@ -72,8 +86,8 @@ exports.update = (req, res) => {
     return;
   }
 
-  // Use userID in the where clause to match standardized model PK
-  User.update(req.body, { where: { userID: userID } })
+  // The user model uses ID as its primary key.
+  User.update(req.body, { where: { ID: userID } })
     .then((num) => {
       const affected = Array.isArray(num) ? num[0] : num;
 
@@ -92,23 +106,57 @@ exports.update = (req, res) => {
 };
 
 // Delete a user by userID
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   const userID = req.params.id;
 
-  User.destroy({ where: { userID: userID } })
-    .then((num) => {
-      if (num === 1) res.send({ message: "User deleted successfully!" });
-      else {
-        res.send({
-          message: `Cannot delete User with userID=${userID}. Maybe it was not found!`,
-        });
-      }
-    })
-    .catch((err) =>
-      res.status(500).send({
-        message: "Could not delete User with userID=" + userID,
-      })
-    );
+  try {
+    const user = await User.findByPk(userID);
+    if (!user) {
+      return res.send({
+        message: `Cannot delete User with userID=${userID}. Maybe it was not found!`,
+      });
+    }
+
+    const userShifts = await UserShift.findAll({
+      where: { userID },
+      attributes: ["ID"],
+    });
+    const userShiftIDs = userShifts
+      .map((row) => Number(row?.ID))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    if (userShiftIDs.length) {
+      await ClockInOut.destroy({ where: { user_shift_id: { [Op.in]: userShiftIDs } } });
+      await SwapShiftRequest.destroy({ where: { userShiftID: { [Op.in]: userShiftIDs } } });
+      await UserShiftTaskList.destroy({ where: { user_shiftID: { [Op.in]: userShiftIDs } } });
+      await TaskListItemStatus.destroy({ where: { user_shiftID: { [Op.in]: userShiftIDs } } });
+    }
+
+    await SwapShiftResponse.destroy({ where: { responderUserID: userID } });
+    await TaskListItemStatus.destroy({ where: { checked_by: userID } });
+    await DepartmentUser.destroy({ where: { userID } });
+    await UserPosition.destroy({ where: { userID } });
+    await UserShift.destroy({ where: { userID } });
+    await UserNotification.destroy({ where: { userID } });
+    await Unavailable.destroy({ where: { userID } });
+    await SettingsValues.destroy({ where: { userID } });
+    await Announcement.destroy({ where: { createdByUserID: userID } });
+    await Session.destroy({ where: { email: user.email } });
+
+    const num = await User.destroy({ where: { ID: userID } });
+    if (num === 1) {
+      return res.send({ message: "User deleted successfully!" });
+    }
+
+    return res.send({
+      message: `Cannot delete User with userID=${userID}. Maybe it was not found!`,
+    });
+  } catch (err) {
+    console.error("User delete failed:", err);
+    return res.status(500).send({
+      message: "Could not delete User with userID=" + userID,
+    });
+  }
 };
 
 export default exports;

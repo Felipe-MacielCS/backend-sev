@@ -182,7 +182,7 @@ exports.findAll = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["userID", "name", "email"],
+          attributes: [["ID", "userID"], "name", "email"],
           required: false
         }
       ],
@@ -213,7 +213,7 @@ exports.findOne = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["userID", "name", "email"],
+          attributes: [["ID", "userID"], "name", "email"],
         }
       ]
     });

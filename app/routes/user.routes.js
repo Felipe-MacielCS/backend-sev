@@ -3,17 +3,24 @@ import authenticate from "../authorization/authorization.js";
 import { Router } from "express";
 
 const router = Router();
+const getNormalizedRole = (value) => String(value || "").trim().toLowerCase();
 
 const isAdmin = (req, res, next) => {
-  if (req.userRole === "Admin") next();
+  if (getNormalizedRole(req.userRole) === "admin") next();
   else res.status(403).send({ message: "Requires Admin Role" });
+};
+
+const isManagerOrAdmin = (req, res, next) => {
+  const role = getNormalizedRole(req.userRole);
+  if (role === "admin" || role === "manager") next();
+  else res.status(403).send({ message: "Requires Manager or Admin Role" });
 };
 
 router.get("/", [authenticate], users.findAll);
 router.get("/:id", [authenticate], users.findOne);
 
 router.post("/", [authenticate, isAdmin], users.create);
-router.put("/:id", [authenticate, isAdmin], users.update);
+router.put("/:id", [authenticate, isManagerOrAdmin], users.update);
 router.delete("/:id", [authenticate, isAdmin], users.delete);
 
 export default router;

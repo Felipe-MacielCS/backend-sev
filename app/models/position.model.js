@@ -21,6 +21,14 @@ const Position = sequelize.define(
       allowNull: true,
     },
 
+    color: {
+      type: DataTypes.STRING(7),
+      allowNull: true,
+      validate: {
+        is: /^#[0-9a-f]{6}$/i,
+      },
+    },
+
     departmentID: {
       type: DataTypes.INTEGER,
       allowNull: true,
