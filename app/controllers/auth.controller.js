@@ -1,6 +1,10 @@
 import db from "../models/index.js";
 import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
+import {
+  getStudentScheduleConfig,
+  syncStudentScheduleForUser,
+} from "../services/studentSchedule.service.js";
 
 const User = db.user;
 const Session = db.session;
@@ -55,6 +59,15 @@ exportsObj.login = async (req, res) => {
 
     console.log("New session created for:", email);
 
+    const studentScheduleConfig = await getStudentScheduleConfig(user.ID);
+    const needsStudentIdSetup = false;
+
+    if (studentScheduleConfig.configured) {
+      syncStudentScheduleForUser(user.ID).catch((syncError) => {
+        console.error("Automatic student schedule sync failed:", syncError);
+      });
+    }
+
     // Return the user data and the new role attribute to the frontend
     res.send({
       userID: user.ID, 
@@ -62,6 +75,9 @@ exportsObj.login = async (req, res) => {
       name: user.name,
       role: user.role,    // The frontend now uses this to determine permissions
       token: session.token,
+      studentScheduleConfigured: studentScheduleConfig.configured,
+      studentScheduleTerm: studentScheduleConfig.termCode,
+      needsStudentIdSetup,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -104,3 +120,5 @@ exportsObj.logout = async (req, res) => {
 };
 
 export default exportsObj;
+
+

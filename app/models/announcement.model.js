@@ -1,35 +1,40 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelizeInstance.js";
 
-const TaskListItem = sequelize.define(
-  "tasklistitem",
+const Announcement = sequelize.define(
+  "announcement",
   {
     ID: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    name: {
-      type: DataTypes.STRING,
+    subject: {
+      type: DataTypes.STRING(255),
       allowNull: false,
     },
-    description: {
+    message: {
       type: DataTypes.TEXT,
-      allowNull: true,
+      allowNull: false,
     },
-    taskListID: {
+    departmentID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    task_listID: {
+    createdByUserID: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
+    },
+    recipientCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {
-    tableName: "task_list_items",
+    tableName: "announcements",
     timestamps: true,
   }
 );
 
-export default TaskListItem;
+export default Announcement;
