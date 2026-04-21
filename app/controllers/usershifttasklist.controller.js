@@ -1,5 +1,5 @@
 import db from "../models/index.js";
-const UserShiftTaskList = db.userShiftTaskList;
+const UserShiftTaskList = db.usershifttasklist;
 
 const exports = {};
 
