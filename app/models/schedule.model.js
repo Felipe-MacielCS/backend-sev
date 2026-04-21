@@ -5,7 +5,6 @@ const Schedule = sequelize.define(
   "schedule",
   {
     ID: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    name: { type: DataTypes.STRING(255), allowNull: true },
     start_date: { type: DataTypes.DATEONLY, allowNull: false },
     end_date: { type: DataTypes.DATEONLY, allowNull: false },
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: "draft" },

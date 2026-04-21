@@ -72,6 +72,7 @@ exportsObj.getWeeklyPayroll = async (req, res) => {
                 {
                   model: Position,
                   required: false,
+                  attributes: ["positionID", "title", "pay_rate"],
                 },
               ],
             },
@@ -87,11 +88,14 @@ exportsObj.getWeeklyPayroll = async (req, res) => {
 
     const departmentUsers = await DepartmentUser.findAll({
       where: { departmentID },
+      attributes: ["ID", "userID", "departmentID", "role", "employee_pay_rate"],
     });
 
     const deptUserMap = {};
+    const departmentUserIDs = new Set();
     for (const row of departmentUsers) {
       deptUserMap[row.userID] = row;
+      departmentUserIDs.add(Number(row.userID));
     }
 
     const overrides = await PayrollOverride.findAll({
@@ -106,46 +110,54 @@ exportsObj.getWeeklyPayroll = async (req, res) => {
       overrideMap[row.user_shift_id] = row;
     }
 
-    const entries = clockRows.map((clock) => {
-      const userShift = clock.usershift;
-      const shift = userShift?.shift;
-      const user = userShift?.user;
-      const position = shift?.position || null;
-      const deptUser = deptUserMap[userShift?.userID] || null;
-      const override = overrideMap[userShift?.ID] || null;
+    const entries = clockRows
+      .filter((clock) => {
+        const userShift = clock.userShift || clock.usershift || null;
+        return departmentUserIDs.has(Number(userShift?.userID));
+      })
+      .map((clock) => {
+        const userShift = clock.userShift || clock.usershift || null;
+        if (!userShift) return null;
 
-      const baseHours = diffHours(clock.clock_in_time, clock.clock_out_time);
-      const baseRate =
-        deptUser?.employee_pay_rate != null
-          ? Number(deptUser.employee_pay_rate)
-          : position?.pay_rate != null
-            ? Number(position.pay_rate)
-            : 0;
+        const shift = userShift.shift;
+        const user = userShift.user;
+        const position = shift?.position || null;
+        const deptUser = deptUserMap[userShift.userID] || null;
+        const override = overrideMap[userShift.ID] || null;
 
-      const effectiveHours =
-        override?.override_hours != null ? Number(override.override_hours) : baseHours;
+        const baseHours = diffHours(clock.clock_in_time, clock.clock_out_time);
+        const baseRate =
+          deptUser?.employee_pay_rate != null
+            ? Number(deptUser.employee_pay_rate)
+            : position?.pay_rate != null
+              ? Number(position.pay_rate)
+              : 0;
 
-      const effectiveRate =
-        override?.override_hourly_rate != null
-          ? Number(override.override_hourly_rate)
-          : baseRate;
+        const effectiveHours =
+          override?.override_hours != null ? Number(override.override_hours) : baseHours;
 
-      return {
-        ID: userShift.ID,
-        user_shift_id: userShift.ID,
-        employee_name: user?.name || "Unknown Employee",
-        position_name: position?.title || "",
-        shift_date: shift?.shift_date || null,
-        clock_in_time: clock.clock_in_time,
-        clock_out_time: clock.clock_out_time,
-        base_hours: Number(baseHours.toFixed(2)),
-        effective_hours: Number(effectiveHours.toFixed(2)),
-        base_rate: Number(baseRate.toFixed(2)),
-        effective_rate: Number(effectiveRate.toFixed(2)),
-        total_pay: Number((effectiveHours * effectiveRate).toFixed(2)),
-        notes: override?.notes || "",
-      };
-    });
+        const effectiveRate =
+          override?.override_hourly_rate != null
+            ? Number(override.override_hourly_rate)
+            : baseRate;
+
+        return {
+          ID: userShift.ID,
+          user_shift_id: userShift.ID,
+          employee_name: user?.name || "Unknown Employee",
+          position_name: position?.title || "",
+          shift_date: shift?.shift_date || null,
+          clock_in_time: clock.clock_in_time,
+          clock_out_time: clock.clock_out_time,
+          base_hours: Number(baseHours.toFixed(2)),
+          effective_hours: Number(effectiveHours.toFixed(2)),
+          base_rate: Number(baseRate.toFixed(2)),
+          effective_rate: Number(effectiveRate.toFixed(2)),
+          total_pay: Number((effectiveHours * effectiveRate).toFixed(2)),
+          notes: override?.notes || "",
+        };
+      })
+      .filter(Boolean);
 
     const totalHours = entries.reduce((sum, row) => sum + Number(row.effective_hours || 0), 0);
     const totalPayroll = entries.reduce((sum, row) => sum + Number(row.total_pay || 0), 0);

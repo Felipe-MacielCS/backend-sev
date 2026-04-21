@@ -34,11 +34,6 @@ const Position = sequelize.define(
       allowNull: true,
     },
 
-    companyID: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-
     pay_rate: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,

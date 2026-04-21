@@ -34,7 +34,6 @@ exports.create = async (req, res) => {
     }
 
     const data = await Schedule.create({
-      name: name ?? null,
       start_date,
       end_date,
       status: status ?? statusFromType(type),
@@ -116,6 +115,7 @@ exports.update = async (req, res) => {
     }
 
     delete req.body.ID;
+    delete req.body.name;
 
     const [num] = await Schedule.update(req.body, { where: { ID: id } });
 
