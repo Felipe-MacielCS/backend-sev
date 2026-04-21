@@ -6,6 +6,7 @@ import UserShift from "./usershift.model.js";
 import Shift from "./shift.model.js";
 import ShiftTaskList from "./shifttasklist.model.js";
 import UserShiftTaskList from "./usershifttasklist.model.js";
+import ShiftTaskList from "./shifttasklist.model.js";
 import TaskList from "./tasklist.model.js";
 import Notification from "./notification.model.js";
 import UserNotification from "./usernotification.model.js";
@@ -38,6 +39,7 @@ db.usershift = UserShift;
 db.shift = Shift;
 db.shifttasklist = ShiftTaskList;
 db.usershifttasklist = UserShiftTaskList;
+db.shifttasklist = ShiftTaskList;
 db.tasklist = TaskList;
 db.tasklistitems = TaskListItems;
 db.tasklistitemstatus = TaskListItemStatus;
@@ -96,7 +98,7 @@ db.tasklist.belongsToMany(db.usershift, {
   onDelete: "CASCADE",
 });
 
-// shift to tasklist (through shift_task_list)
+// shift to tasklist (through shifttasklist)
 db.shift.belongsToMany(db.tasklist, {
   through: db.shifttasklist,
   foreignKey: "shiftID",

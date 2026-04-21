@@ -9,12 +9,10 @@ const ShiftTaskList = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-
     shiftID: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-
     task_listID: {
       type: DataTypes.INTEGER,
       allowNull: false,
